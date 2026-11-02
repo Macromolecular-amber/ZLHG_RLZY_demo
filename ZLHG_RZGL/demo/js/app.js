@@ -71,17 +71,22 @@
 
   /* ---------- 侧边栏 ---------- */
   function renderMenu() {
-    $('#sidebarMenu').innerHTML = D.MENU.map((g) => {
+    const menu = window.HR_MENU_FULL || D.MENU;
+    const wrap = $('.sidebar-menu-wrapper');
+    const keepScroll = wrap ? wrap.scrollTop : 0;
+    $('#sidebarMenu').innerHTML = menu.map((g) => {
       if (g.flat) {
-        return `<li class="menu-group"><div class="menu-group-title" data-nav="home">${svg(g.icon)}<span class="menu-label">${esc(g.title)}</span></div></li>`;
+        const active = state.page === 'home' ? ' active' : '';
+        return `<li class="menu-group"><div class="menu-group-title${active}" data-nav="home">${svg(g.icon)}<span class="menu-label">${esc(g.title)}</span></div></li>`;
       }
-      const open = g.open && state.page !== 'home';
-      const items = g.children.map((c, i) => {
-        const key = g.key === 'employee' ? ['basic', 'work', 'education', 'certificate', 'archive'][i] : '';
-        const active = key && key === state.page ? ' active' : '';
-        return `<li class="menu-item${active}"${key ? ` data-page="${key}"` : ''}>${esc(c)}</li>`;
+      const items = (g.children || []).map((c) => {
+        const key = c.p || c;
+        const label = c.t || c;
+        const active = key === state.page ? ' active' : '';
+        return `<li class="menu-item${active}" data-page="${key}">${esc(label)}</li>`;
       }).join('');
-      return `<li class="menu-group${open ? ' open' : ''}">
+      const groupActive = (g.children || []).some((c) => (c.p || c) === state.page);
+      return `<li class="menu-group${groupActive ? ' open' : ''}">
         <div class="menu-group-title" data-group-toggle="${g.key}">
           ${svg(g.icon)}
           <span class="menu-label">${esc(g.title)}</span>
@@ -90,15 +95,11 @@
         <ul class="menu-children">${items}</ul>
       </li>`;
     }).join('');
+    if (wrap) wrap.scrollTop = keepScroll;
 
     $$('#sidebarMenu .menu-group-title').forEach((el) => {
       el.addEventListener('click', () => {
         if (el.dataset.nav === 'home') { goPage('home'); return; }
-        const group = D.MENU.find((m) => m.key === el.dataset.groupToggle);
-        if (group && group.key !== 'employee') {
-          toast('演示版仅开放「员工信息管理」模块，其余模块为框架占位', 'warn');
-          return;
-        }
         el.parentElement.classList.toggle('open');
       });
     });
@@ -109,7 +110,11 @@
 
   function goPage(p) {
     state.page = p;
+    const page = PAGES[p];
+    if (page && page.tabs && page.tabs.length && !state.tab[p]) state.tab[p] = page.tabs[0].key;
     try { history.replaceState(null, '', '#' + p); } catch (e) { /* 本地文件亦可 */ }
+    const content = $('.content-body');
+    if (content) content.scrollTop = 0;
     renderMenu();
     renderPage();
   }
@@ -134,8 +139,11 @@
   /* ---------- 表头 / 筛选 ---------- */
   function heading(page) {
     const p = PAGES[page];
+    const groups = window.HR_MENU_FULL || [];
+    const grp = groups.find((g) => (g.children || []).some((c) => (c.p || c) === page));
+    const crumb = grp ? grp.title : '员工信息管理';
     return `<div class="page-heading">
-      <div class="breadcrumb">员工信息管理<i>›</i><b>${esc(p.title)}</b></div>
+      <div class="breadcrumb">${esc(crumb)}<i>›</i><b>${esc(p.title)}</b></div>
       <div class="heading-main">
         <div>
           <h1>${esc(p.title)}</h1>
@@ -537,6 +545,8 @@
     }
   };
 
+  Object.assign(PAGES, window.HR_SPECS || {});
+
   function certCols() {
     return [
       { label: '员工', width: '170px', render: (c) => `<div class="avatar-cell"><div class="avatar-sm">${esc(String(c.empName).slice(0, 1))}</div><div><div class="strong">${esc(c.empName)}</div><div class="sub">${esc(c.empNo)} · ${esc(c.unit)}</div></div></div>` },
@@ -555,24 +565,32 @@
     if (!p.tabs || p.tabs.length < 2) return '';
     const cur = state.tab[page];
     return `<div class="tabs">${p.tabs.map((t) => {
-      let count = D.EMPLOYEES.length;
-      if (t.key === 'docs') count = D.EMPLOYEES.reduce((n, e) => n + e.docs.length, 0);
-      else if (t.key === 'edu') count = D.EMPLOYEES.reduce((n, e) => n + e.education.length, 0);
-      else if (t.key === 'resume') count = D.EMPLOYEES.reduce((n, e) => n + e.resumes.length, 0);
-      else if (t.key === 'family') count = D.EMPLOYEES.reduce((n, e) => n + e.family.length, 0);
-      else if (t.key === 'special') count = D.CERTS.filter((c) => c.category === '特种作业').length;
-      else if (t.key === 'register') count = D.CERTS.filter((c) => c.category === '注册资格').length;
-      else if (t.key === 'ledger' && page === 'archive') count = D.ARCHIVES.length;
-      else if (t.key === 'borrow') count = D.BORROWS.length;
+      let count = 0;
+      try { count = (p.rows(t.key, {}) || []).length; } catch (e) { count = 0; }
       return `<button class="tab-btn${t.key === cur ? ' active' : ''}" data-tab="${t.key}">${esc(t.label)}<span class="tab-count">${count}</span></button>`;
     }).join('')}</div>`;
   }
 
   function renderPage() {
+    try { renderPageInner(); } catch (err) {
+      $('#page').innerHTML = `<section class="panel-card"><div class="panel-header"><h3>页面渲染异常</h3></div>
+        <p class="note-line">${esc(err && err.message ? err.message : String(err))}</p></section>`;
+      if (window.console) console.error(err);
+    }
+  }
+
+  function renderPageInner() {
     if (state.page === 'home') { showHome(); return; }
     const page = state.page;
     const p = PAGES[page];
+    if (!p) { toast('页面不存在：' + page, 'warn'); return; }
+    if (!p.tabs || !p.tabs.length) p.tabs = [{ key: 'main', label: '' }];
+    if (!state.tab[page]) state.tab[page] = p.tabs[0].key;
     const tab = state.tab[page];
+    if (p.custom) {
+      $('#page').innerHTML = heading(page) + p.custom(tab);
+      return;
+    }
     const panel = p.panel(tab);
     const b = tableBlock(page, tab);
     $('#page').innerHTML = heading(page)
@@ -653,14 +671,95 @@
       case 'upload-doc': return toast('已调用扫描仪接口，上传成功后自动更新目录索引', 'success');
       case 'import': return toast('批量导入模板已下载：员工基础信息导入模板.xlsx', 'success');
       case 'export': return doExport();
-      default: return toast('演示环境：该操作仅做界面展示', 'warn');
+      case 'g-view': return genericView(state.page, id);
+      case 'g-edit': return genericEdit(state.page, id);
+      case 'g-add': return genericEdit(state.page, null);
+      case 'toast': return toast(id || '操作已完成', 'success');
+      case 'unit': return toast('已切换至 ' + id + ' 人资管理界面（演示环境保持当前数据）', 'info');
+      case 'tree-toggle': return toast('机构节点已展开 / 收起', 'info');
+      default:
+        if (PAGES[state.page] && PAGES[state.page].onAction) return PAGES[state.page].onAction(act, id);
+        return toast('演示环境：该操作仅做界面展示', 'warn');
     }
+  }
+
+  /* ---------- 通用实体的查看 / 编辑 ---------- */
+  function findRow(pageKey, id) {
+    const p = PAGES[pageKey];
+    if (!p) return null;
+    const rowId = (r) => String(r.id || r.empNo || r.name || '');
+    const current = (p.rows && p.rows(state.tab[pageKey], {}) || []);
+    let hit = current.find((r) => rowId(r) === String(id));
+    if (hit) return hit;
+    if (p.data) {
+      for (const k of Object.keys(p.data)) {
+        hit = (p.data[k] || []).find((r) => rowId(r) === String(id));
+        if (hit) return hit;
+      }
+    }
+    return null;
+  }
+
+  function genericView(pageKey, id) {
+    const p = PAGES[pageKey];
+    const row = findRow(pageKey, id);
+    if (!p || !row) return;
+    const labels = (p.meta && p.meta.labels) || {};
+    const skip = ['id', 'empNo'];
+    const keys = Object.keys(row).filter((k) => !skip.includes(k));
+    const body = keys.map((k) => {
+      const v = row[k];
+      let val;
+      if (k === 'status' || k === 'state') val = statusTag(v);
+      else if (Array.isArray(v)) val = v.map((x) => softChip(String(x), 'blue')).join(' ');
+      else if (typeof v === 'object') val = '—';
+      else val = esc(v == null ? '—' : v);
+      return `<dt>${esc(labels[k] || k)}</dt><dd>${val}</dd>`;
+    }).join('');
+    openDrawer({
+      title: `${(p.meta && p.meta.entity) || '记录'}详情`,
+      body: `<div class="detail-hero"><strong>${esc(row.name || row.empName || row.id || '')}</strong>
+        <span>${esc(row.unit || '')}${row.dept ? ' / ' + esc(row.dept) : ''}　${statusTag(row.status || '')}</span></div>
+        <div class="detail-section"><h4>详细信息</h4><dl class="desc-grid">${body}</dl></div>`,
+      footer: (p.meta && p.meta.fields) ? '<button class="btn" data-close>关闭</button><button class="btn primary" data-edit>编辑</button>' : '<button class="btn" data-close>关闭</button>',
+      onMount: (overlay) => {
+        const btn = overlay.querySelector('[data-edit]');
+        if (btn) btn.addEventListener('click', () => { closeAll(); genericEdit(pageKey, id); });
+      }
+    });
+  }
+
+  function genericEdit(pageKey, id) {
+    const p = PAGES[pageKey];
+    if (!p || !p.meta || !p.meta.fields) return toast('演示环境：该记录暂不支持编辑', 'warn');
+    const row = id ? findRow(pageKey, id) : null;
+    const fields = p.meta.fields;
+    openDialog({
+      title: `${row ? '编辑' : '新增'}${p.meta.entity || '记录'}`,
+      body: formBody(fields, row || {}),
+      onOk: (v) => {
+        if (row) {
+          Object.assign(row, v);
+          toast('已保存并更新台账', 'success');
+        } else {
+          const tab = state.tab[pageKey];
+          const newRow = Object.assign({ id: 'NEW-' + Date.now().toString().slice(-6), status: '待审批' }, v);
+          if (p.data && p.data[tab]) p.data[tab].unshift(newRow);
+          toast('新增记录已提交，待审批', 'success');
+        }
+        closeAll(); renderPage();
+      }
+    });
   }
 
   /* ---------- 导出 ---------- */
   function doExport() {
     const page = state.page;
     const tab = state.tab[page];
+    if (!PAGES[page] || typeof PAGES[page].rows !== 'function') {
+      toast('该页面为汇总看板，暂无可导出的明细数据', 'info');
+      return;
+    }
     const rows = PAGES[page].rows(tab, state.filters[fk(page, tab)] || {});
     let headers = [], lines = [];
     if (page === 'basic' && tab === 'profile') {
@@ -682,8 +781,12 @@
       headers = ['登记单号', '档案编号', '员工', '类型', '事由', '经办人', '登记日期', '状态'];
       lines = rows.map((b) => [b.id, b.archive, b.name, b.type, b.reason, b.operator, b.date, b.status]);
     } else {
-      headers = ['员工', '内容'];
-      lines = rows.map((r) => [r.emp.name, JSON.stringify(r.row)]);
+      const p = PAGES[page];
+      const labels = (p && p.meta && p.meta.labels) || {};
+      const sample = rows[0] || {};
+      const keys = Object.keys(sample).filter((k) => typeof sample[k] !== 'object');
+      headers = keys.map((k) => labels[k] || k);
+      lines = rows.map((r) => keys.map((k) => r[k]));
     }
     const csv = '\ufeff' + [headers].concat(lines).map((r) => r.map((x) => `"${String(x == null ? '' : x).replace(/"/g, '""')}"`).join(',')).join('\r\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -1064,30 +1167,40 @@
   function showHome() {
     state.page = 'home';
     renderMenu();
+    const menu = (window.HR_MENU_FULL || []).filter((g) => !g.flat);
+    const cards = menu.map((g) => {
+      const first = g.children && g.children[0] ? g.children[0].p : '';
+      return `<div class="unit-card" data-page="${first}">
+        <div class="u-name">${esc(g.title)}</div>
+        <div class="u-full">${(g.children || []).length} 个二级功能</div>
+        <div class="u-desc">${esc((g.children || []).map((c) => c.t).join(' · '))}</div>
+        <div class="u-foot"><span>进入模块</span><b>›</b></div></div>`;
+    }).join('');
     $('#page').innerHTML = `<div class="page-heading"><div class="heading-main"><div>
-        <h1>员工信息管理 · 演示导览</h1>
-        <p>本演示围绕「员工信息管理」下的 5 个子功能构建，全部为前端交互演示，数据为虚构样例。</p>
+        <h1>中陆化工人力资源管理系统 · 功能演示</h1>
+        <p>覆盖 16 个一级模块、50 个二级功能，严格对应《人力资源管理系统功能明细》；全部为前端交互演示，数据为虚构样例。</p>
       </div></div></div>` + metrics([
-      { label: '在册员工', value: '2,846', unit: '人', note: '较上月 +2.1%', cls: 'up', color: '#7659e7' },
-      { label: '证件待更新', value: '24', unit: '项', note: '30 天内到期 17 项', cls: 'warn', color: '#e5a22a' },
-      { label: '履历待补全', value: '15', unit: '人', note: '缺少外部经历证明', cls: 'warn', color: '#e5a22a' },
-      { label: '借阅档案', value: '12', unit: '册', note: '超期未还 2 册', color: '#4389ed' }
-    ]) + `<section class="panel-card"><div class="panel-header"><h3>五个子功能入口</h3><span class="panel-extra">点击进入对应演示页面</span></div>
-      <div class="doc-grid">${[
-        { k: 'basic', t: '基础信息', d: '个人信息档案 · 证件信息', i: 'id' },
-        { k: 'work', t: '工作信息', d: '用工属性 · 在职状态', i: 'briefcase' },
-        { k: 'education', t: '学历与履历', d: '学历学位 · 工作履历 · 家庭成员', i: 'book' },
-        { k: 'certificate', t: '资质证照', d: '特种作业证 · 注册资格', i: 'award' },
-        { k: 'archive', t: '人事档案', d: '档案电子化 · 借阅转递', i: 'folder' }
-      ].map((x) => `<div class="doc-item" data-page="${x.k}" style="cursor:pointer"><div class="doc-icon">${svg(x.i)}</div>
-        <div class="doc-body"><div class="doc-name">${x.t}</div><div class="doc-sub">${x.d}</div></div></div>`).join('')}</div></section>`;
+      { label: '一级模块', value: '16', unit: '个', note: '组织机构 → 报表系统管理', color: '#7659e7' },
+      { label: '二级功能', value: '50', unit: '个', note: '全部可点击进入', color: '#4389ed' },
+      { label: '在册员工', value: '2,846', unit: '人', note: '较上月 +2.1%', cls: 'up', color: '#1cad9b' },
+      { label: '功能覆盖', value: '100', unit: '%', note: '按功能清单逐项实现', cls: 'up', color: '#e5a22a' }
+    ]) + `<section class="panel-card"><div class="panel-header"><h3>全部功能模块</h3><span class="panel-extra">点击卡片进入模块首页</span></div>
+      <div class="unit-grid">${cards}</div></section>`;
     $$('#page [data-page]').forEach((el) => el.addEventListener('click', () => goPage(el.dataset.page)));
   }
 
   /* ---------- 初始化 ---------- */
+  window.HR_UI = {
+    esc, svg, statusTag, softChip, toast, openDialog, openDrawer, formBody,
+    getFilter: (key) => state.filters[key] || {},
+    renderPage, goPage
+  };
+
   const initialPage = location.hash.replace('#', '');
   if (PAGES[initialPage]) state.page = initialPage;
   else if (initialPage === 'home') state.page = 'home';
+  const initP = PAGES[state.page];
+  if (initP && initP.tabs && initP.tabs.length) state.tab[state.page] = initP.tabs[0].key;
   initHeader();
   renderMenu();
   bindPageEvents();
