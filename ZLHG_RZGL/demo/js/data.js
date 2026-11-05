@@ -320,10 +320,37 @@ window.HR_DATA = (function () {
         { category: '特种作业', name: '危险化学品安全作业证', no: 'T620102198301190037', issuer: '甘肃省应急管理厅', issueDate: '2023-06-01', validTo: '2029-06-01', review: '有效' }
       ],
       archive: { no: 'DA-2026-0114', status: '在库', volumes: 2, inDate: '2007-04-12', index: '完整', lastOp: '2026-10-16 干部履历表更新', location: '综合档案室 B 区 05 柜' }
+    },
+    {
+      no: 'ZL10015', name: '王建军', gender: '男', birth: '1968-05-10', idcard: '620102196805100012', nation: '汉族',
+      politics: '群众', native: '甘肃兰州', marriage: '已婚', phone: '138 0931 5567', email: 'wangjj@zhlh.com',
+      address: '兰州市西固区庄浪东路 21 号', emergency: '李秀英（配偶） 138 0931 3321',
+      unit: '集团本部', dept: '生产运行部', position: '内退人员', employment: '内退', manager: '张伟',
+      hireDate: '1990-07-01', probation: '无', regularDate: '1990-07-01', status: '内退',
+      seniority: '36.3 年', workAge: '38 年', photo: false,
+      education: [{ level: '全日制中专', school: '兰州化工学校', major: '化工工艺', degree: '中专', gradDate: '1988-06', verify: '已认证' }],
+      resumes: [{ start: '1990-07', end: '2026-06', unit: '中陆化工集团', dept: '生产运行部', position: '操作工 → 值班长', type: '内部调动', reason: '2026-07 办理内退' }],
+      family: [{ relation: '配偶', name: '李秀英', unit: '已退休', phone: '138 0931 3321' }],
+      certs: [{ category: '特种作业', name: '危险化学品安全作业证', no: 'T620102196805100012', issuer: '甘肃省应急管理厅', issueDate: '2023-03-01', validTo: '2029-03-01', review: '有效' }],
+      archive: { no: 'DA-2026-0115', status: '在库', volumes: 2, inDate: '1990-08-01', index: '完整', lastOp: '2026-07-01 内退审批归档', location: '综合档案室 A 区 07 柜' }
+    },
+    {
+      no: 'ZL10016', name: '刘志强', gender: '男', birth: '1975-02-18', idcard: '620102197502180037', nation: '汉族',
+      politics: '群众', native: '甘肃白银', marriage: '已婚', phone: '139 0931 8876', email: 'liuzq@zhlh.com',
+      address: '兰州市西固区福利路 133 号', emergency: '张丽（配偶） 139 0931 2245',
+      unit: '三叶实业', dept: '生产运行部', position: '业务承包作业人员', employment: '业务承包', manager: '陈立',
+      hireDate: '2024-01-01', probation: '无', regularDate: '2024-01-01', status: '在职',
+      seniority: '2.8 年', workAge: '22 年', photo: false,
+      education: [{ level: '全日制大专', school: '兰州石化职业技术学院', major: '化工工艺', degree: '大专', gradDate: '1996-06', verify: '已认证' }],
+      resumes: [
+        { start: '2024-01', end: '至今', unit: '三叶实业（业务承包）', dept: '生产运行部', position: '业务承包作业人员', type: '外部经历', reason: '业务承包合同用工' },
+        { start: '1996-07', end: '2023-12', unit: '兰州石化公司', dept: '炼油厂', position: '操作工', type: '外部经历', reason: '单位改制' }
+      ],
+      family: [{ relation: '配偶', name: '张丽', unit: '兰州石化公司', phone: '139 0931 2245' }],
+      certs: [],
+      archive: { no: 'DA-2026-0116', status: '在库', volumes: 1, inDate: '2024-01-10', index: '待补', lastOp: '2026-09-01 业务承包协议归档', location: '综合档案室 C 区 06 柜' }
     }
   ];
-
-  /* 证件归档：按员工证书自动生成，补充固定证件 */
   EMPLOYEES.forEach((e) => {
     const docs = [
       { name: '身份证', files: ['身份证（正面）.jpg', '身份证（反面）.jpg'], validTo: '长期', status: '已归档', type: 'ID' },
@@ -373,15 +400,17 @@ window.HR_DATA = (function () {
 
   const CATALOG = [
     { name: '履历材料', count: 6, status: '完整' },
-    { name: '自传材料', count: 2, status: '完整' },
-    { name: '考核材料', count: 12, status: '完整' },
-    { name: '学历学位材料', count: 4, status: '完整' },
-    { name: '职称 / 职业资格材料', count: 5, status: '完整' },
-    { name: '党团材料', count: 3, status: '完整' },
+    { name: '自传 / 资料材料', count: 2, status: '完整' },
+    { name: '鉴定考核材料（专业技术人员年度考核表）', count: 12, status: '完整' },
+    { name: '学历学位材料（学信网认证）', count: 4, status: '完整' },
+    { name: '专业技术职务评级材料（资格证）', count: 5, status: '完整' },
+    { name: '科研学术材料', count: 2, status: '待补' },
+    { name: '培训材料', count: 6, status: '完整' },
+    { name: '政审材料（三代证明 / 党团材料）', count: 3, status: '完整' },
     { name: '奖励材料', count: 7, status: '完整' },
     { name: '处分材料', count: 0, status: '无' },
-    { name: '工资 / 任免材料', count: 9, status: '完整' },
-    { name: '劳动合同 / 协议', count: 4, status: '完整' }
+    { name: '劳动合同及工资 / 调资 / 定档 / 任免材料', count: 9, status: '完整' },
+    { name: '出国 / 参加人民代表大会 / 其他材料', count: 1, status: '完整' }
   ];
 
   const MENU = [

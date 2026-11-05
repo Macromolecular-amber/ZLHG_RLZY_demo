@@ -275,12 +275,22 @@ window.HR_DATA2 = (function () {
   ];
 
   const RECRUIT_TYPES = [
-    { id: 'RT-01', type: '校园招聘', plan: '12 人', progress: '已完成 8 人', channel: '兰州石化职院 / 兰州理工', status: '进行中' },
-    { id: 'RT-02', type: '社会招聘', plan: '26 人', progress: '已完成 10 人', channel: 'BOSS直聘 / 智联 / 前程无忧', status: '进行中' },
-    { id: 'RT-03', type: '内部竞聘', plan: '6 人', progress: '笔试完成', channel: '集团内部人才市场', status: '进行中' },
-    { id: 'RT-04', type: '退役军人安置', plan: '4 人', progress: '已到岗 2 人', channel: '兰州市退役军人事务局', status: '进行中' },
-    { id: 'RT-05', type: '高层次人才引进', plan: '3 人', progress: '洽谈 1 人', channel: '高校 / 科研院所', status: '待启动' },
+    { id: 'RT-01', type: '校园招聘平台', plan: '12 人', progress: '已完成 8 人', channel: '兰州石化职院 / 兰州理工 / 高校就业平台', status: '进行中' },
+    { id: 'RT-02', type: '内部公开招聘平台', plan: '6 人', progress: '笔试完成 4 人', channel: '集团内部人才市场', status: '进行中' },
+    { id: 'RT-03', type: '社会化招聘平台', plan: '26 人', progress: '已完成 10 人', channel: 'BOSS直聘 / 智联 / 前程无忧接口抓取', status: '进行中' },
+    { id: 'RT-04', type: '猎头寻访', plan: '3 人', progress: '洽谈 1 人', channel: '新材料 / 高层次人才寻访', status: '进行中' },
+    { id: 'RT-05', type: '退役军人安置', plan: '4 人', progress: '已到岗 2 人', channel: '兰州市退役军人事务局', status: '进行中' },
     { id: 'RT-06', type: '劳务协作', plan: '8 人', progress: '已到岗 5 人', channel: '宏达人力', status: '进行中' }
+  ];
+
+  const GRADUATE_DEFENSE = [
+    { id: 'JX-2026-021', name: '张一帆', school: '兰州石化职业技术学院', major: '化工工艺', post: '三叶实业 · 化工总控工', stage: '材料上传', score: '—', defense: '待安排', publish: '—', status: '进行中', proof: '未生成' },
+    { id: 'JX-2026-020', name: '李明轩', school: '兰州理工大学', major: '机械设计制造', post: '汇丰石化 · 设备工程师', stage: '专家评分', score: '86.5', defense: '待安排', publish: '—', status: '进行中', proof: '未生成' },
+    { id: 'JX-2026-019', name: '王思远', school: '中国石油大学（华东）', major: '安全工程', post: '集团本部 · 安全工程师', stage: '答辩考核', score: '91.0', defense: '已完成', publish: '待公示', status: '进行中', proof: '未生成' },
+    { id: 'JX-2026-018', name: '陈嘉怡', school: '兰州财经大学', major: '会计学', post: '集团本部 · 财务共享专员', stage: '结果公示', score: '88.0', defense: '已完成', publish: '10-27 起 7 天', status: '公示中', proof: '未生成' },
+    { id: 'JX-2026-017', name: '郭子涵', school: '兰州石化职业技术学院', major: '工业分析', post: '三叶实业 · 化验员', stage: '结果公示', score: '84.5', defense: '已完成', publish: '10-26 起 7 天', status: '公示中', proof: '未生成' },
+    { id: 'JX-2026-016', name: '周雨萱', school: '西北师范大学', major: '人力资源管理', post: '集团本部 · 人力资源专员', stage: '已定级', score: '87.5', defense: '已完成', publish: '已公示', status: '已完成', proof: '已发放' },
+    { id: 'JX-2026-015', name: '赵天成', school: '兰州装备制造技师学院', major: '焊接技术', post: '维达石化 · 检维修技师', stage: '已定级', score: '90.0', defense: '已完成', publish: '已公示', status: '已完成', proof: '已发放' }
   ];
 
   /* ---------- 考勤 ---------- */
@@ -383,9 +393,9 @@ window.HR_DATA2 = (function () {
     const basic = [12000, 9900, 12000, 7900, 7000, 9100, 6500, 6500, 6100, 8400, 5400, 13300, 7000, 9900][i] || 7000;
     const overtime = [1655, 0, 897, 0, 897, 0, 0, 480, 897, 0, 0, 0, 0, 448][i] || 0;
     const shift = [480, 240, 480, 0, 480, 240, 0, 480, 480, 240, 0, 0, 0, 480][i] || 0;
-    const perf = Math.round(basic * 0.2 * [1.15, 1.05, 1.1, 1.0, 1.15, 1.05, 0.9, 1.1, 1.0, 1.15, 0.9, 1.1, 1.0, 1.05][i]);
+    const perf = Math.round(basic * 0.2 * ([1.15, 1.05, 1.1, 1.0, 1.15, 1.05, 0.9, 1.1, 1.0, 1.15, 0.9, 1.1, 1.0, 1.05][i] || 1.05));
     const gross = basic + overtime + shift + perf;
-    const deduct = Math.round(gross * [0.177, 0.13, 0.16, 0.11, 0.15, 0.13, 0.1, 0.12, 0.11, 0.16, 0.08, 0.18, 0.1, 0.14][i]);
+    const deduct = Math.round(gross * ([0.177, 0.13, 0.16, 0.11, 0.15, 0.13, 0.1, 0.12, 0.11, 0.16, 0.08, 0.18, 0.1, 0.14][i] || 0.12));
     return {
       empNo: x.no, name: x.name, unit: x.unit, dept: x.dept, basic, overtime, shift, perf,
       gross, deduct, net: gross - deduct, status: i < 10 ? '已核算' : '待复核'
@@ -843,7 +853,7 @@ window.HR_DATA2 = (function () {
     ORG_UNITS, ORG_TREE, ORG_CHANGES, ORG_CODES, POSITIONS, RANKS,
     TRANSFERS, DUTY_CHANGES, SENIORITY, SENIORITY_VERIFY, SPECIAL_WORK, SENIORITY_APPLY,
     CONTRACTS, CONTRACT_CHANGES, AGREEMENTS, DISPUTES,
-    DEMANDS, CANDIDATES, EVALUATIONS, OFFERS, RECRUIT_TYPES,
+    DEMANDS, CANDIDATES, EVALUATIONS, OFFERS, RECRUIT_TYPES, GRADUATE_DEFENSE,
     SHIFTS, SHIFT_MATRIX, DUTY_ROSTER, ATTENDANCE, ATT_EXCEPTIONS, LEAVE_BALANCE, LEAVE_RECORDS, OVERTIME,
     SAL_STANDARDS, SAL_STRUCTURE, PAYROLL, SAL_STEPS, SAL_RECORDS, SAL_ADJUST, BONUS, COST_STRUCT,
     INS_TYPES, INS_CHANGES, INS_BASE, PAY_UNITS, CLAIMS,

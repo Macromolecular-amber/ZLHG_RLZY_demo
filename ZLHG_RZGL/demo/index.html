@@ -8,6 +8,27 @@
 <link rel="stylesheet" href="./css/components.css" />
 </head>
 <body>
+<div class="login-page hidden" id="loginPage">
+  <div class="login-brand">
+    <div class="brand-logo"><svg class="ico"><use href="#i-users"/></svg></div>
+    <h1>中陆化工人力资源管理系统</h1>
+    <div class="sub">ZHONGLU CHEMICAL · HUMAN RESOURCE MANAGEMENT</div>
+    <div class="brand-desc">账号由系统管理员统一开通。输入账号密码后，系统按账号自动识别所属单位，登录后仅显示本单位管辖范围内的人事、薪酬等数据。</div>
+    <div class="login-units">
+      <span>中陆化工集团总部</span><span>三叶实业</span><span>汇丰石化</span><span>翔鑫工贸</span><span>维达石化</span><span>宏达人力</span><span>兰达工贸</span>
+    </div>
+  </div>
+  <div class="login-panel">
+    <h2>登 录</h2>
+    <p class="login-hint">只需输入账号与密码，系统将自动识别您所属的单位。</p>
+    <div class="login-field"><label>账号</label><input class="login-input" id="loginAccount" autocomplete="username" placeholder="请输入账号，如 admin / sanye" /></div>
+    <div class="login-field"><label>密码</label><input class="login-input" id="loginPassword" type="password" autocomplete="current-password" placeholder="请输入密码" /></div>
+    <div class="login-detect" id="loginDetect"><span class="dot"></span><span id="loginDetectText">输入账号后自动识别所属单位</span></div>
+    <button class="login-btn" id="loginBtn">登 录</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-accounts">演示账号：admin（集团总部，密码 admin123）<br>sanye / huifeng / xiangxin / weida / hongda / landa（对应各子公司，密码 123456）</div>
+  </div>
+</div>
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></symbol>
@@ -46,6 +67,7 @@
         <svg class="ico"><use href="#i-menu"/></svg>
       </button>
       <div class="system-title">中陆化工人力资源管理系统</div>
+      <span class="scope-chip" id="scopeChip" style="display:none"></span>
     </div>
     <div class="header-right">
       <div class="global-search">

@@ -86,6 +86,7 @@ window.HR_SPECS = {};
       },
       extra: cfg.extra,
       custom: cfg.custom,
+      notice: cfg.notice,
       width: cfg.width
     };
 
@@ -168,9 +169,9 @@ window.HR_MENU_FULL = [
   { key: 'transfer', title: '员工异动管理', icon: 'swap', children: [
     { t: '入转调离', p: 'transfer-flow' }, { t: '职务变动', p: 'transfer-duty' }] },
   { key: 'seniority', title: '工龄与司龄管理', icon: 'clock', children: [
-    { t: '工龄计算', p: 'seniority-calc' }, { t: '工龄认定', p: 'seniority-verify' }, { t: '工龄应用', p: 'seniority-apply' }] },
+    { t: '工龄计算', p: 'seniority-calc', tag: '二期' }, { t: '工龄认定', p: 'seniority-verify', tag: '二期' }, { t: '工龄应用', p: 'seniority-apply', tag: '二期' }] },
   { key: 'contract', title: '劳动合同与人事关系', icon: 'file', children: [
-    { t: '合同管理', p: 'contract-manage' }, { t: '协议管理', p: 'contract-agreement' }, { t: '劳动争议', p: 'contract-dispute' }] },
+    { t: '合同管理', p: 'contract-manage', tag: '二期' }, { t: '协议管理', p: 'contract-agreement', tag: '二期' }, { t: '劳动争议', p: 'contract-dispute', tag: '二期' }] },
   { key: 'recruit', title: '招聘与人员配置', icon: 'briefcase', children: [
     { t: '招聘需求', p: 'recruit-demand' }, { t: '招聘执行', p: 'recruit-execute' }, { t: '招聘类型', p: 'recruit-type' }] },
   { key: 'attendance', title: '考勤与排班管理', icon: 'calendar', children: [
@@ -191,9 +192,9 @@ window.HR_MENU_FULL = [
   { key: 'cadre', title: '干部管理与人才盘点', icon: 'usercheck', children: [
     { t: '干部管理', p: 'cadre-manage' }, { t: '人才盘点', p: 'cadre-inventory' }, { t: '政治面貌', p: 'cadre-political' }] },
   { key: 'safety', title: '职业健康与安全管理', icon: 'shield', children: [
-    { t: '职业健康', p: 'safety-health' }, { t: '劳保管理', p: 'safety-labor' }, { t: '安全积分', p: 'safety-score' }] },
+    { t: '职业健康', p: 'safety-health', tag: '暂不建设' }, { t: '劳保管理', p: 'safety-labor', tag: '暂不建设' }, { t: '安全积分', p: 'safety-score', tag: '暂不建设' }] },
   { key: 'relation', title: '员工关系与关怀', icon: 'message', children: [
-    { t: '员工关系', p: 'relation-relation' }, { t: '关怀服务', p: 'relation-care' }] },
+    { t: '员工关系', p: 'relation-relation', tag: '暂不建设' }, { t: '关怀服务', p: 'relation-care', tag: '暂不建设' }] },
   { key: 'system', title: '报表分析与系统管理', icon: 'chart', children: [
     { t: '统计分析', p: 'system-analysis' }, { t: '系统管理', p: 'system-admin' }] }
 ];

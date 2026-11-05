@@ -39,7 +39,7 @@
         { label: '值班安排', value: '42', unit: '人次', note: '覆盖 7 家单位', cls: 'warn', color: '#e5a22a' },
         { label: '待排班次', value: '3', unit: '班', note: '节假日值班待审批', cls: 'danger', color: '#eb6262' }
       ]) + H.panel('倒班排班清单（按班组轮转 · 含班次性质与津贴标准）', shifts, '共 6 类班次 · 2026 年 11 月排班表已发布')
-      + `<section class="panel-card"><div class="panel-header"><h3>11 月班组排班表（四班三运转）</h3><span class="panel-extra">8 天循环 · 每日同步考勤</span></div>${calendar}<p class="panel-note">甲班 08:00–16:00 / 中班 16:00–24:00 / 夜班 00:00–08:00，跨零点班次按起始日归集津贴。</p></section>
+      + `<section class="panel-card"><div class="panel-header"><h3>11 月班组排班表（四班三运转）</h3><span class="panel-extra">8 天循环 · 每日同步考勤</span></div>${calendar}<p class="panel-note">甲班 08:00–16:00 / 中班 16:00–24:00 / 夜班 00:00–08:00，跨零点班次按起始日归集津贴；排班表可直接导出 Excel / PDF 供生产现场使用。</p></section>
         <section class="panel-card"><div class="panel-header"><h3>值班管理清单（按日期排序）</h3><span class="panel-extra">本周 5 人</span></div>${duty}<p class="panel-note">节假日值班、抢修值班、大修期间值班按区域与事项定人；签到与补贴自动结算。</p></section>`;
     }
   });
@@ -162,7 +162,23 @@
       { key: 'hours', label: '加班时长（小时）' }, { key: 'reason', label: '事由', full: true }, { key: 'pay', label: '折算方式', type: 'select', options: ['加班费', '调休'] }
     ] },
     extra: () => H.panel('加班折算标准', `<div class="formula">工作日延时加班：时薪 × 150%；休息日加班：时薪 × 200%；法定节假日加班：时薪 × 300%。<br>时薪 = 基本薪酬 ÷ 21.75 ÷ 8；加班费随当月工资发放，选择调休的计入调休余额，6 个月内有效。</div>`, '集团统一标准')
-  });
+      + H.panel('加班换休闭环（加班累计 → 换休额度 → 审批扣减）', `<div class="flow-row">${[['加班申请'], ['审批通过'], ['累计换休额度'], ['换休申请'], ['审批扣减']].map((x, i, a) => `<div class="flow-node ${i === 2 ? 'active' : ''}"><div class="flow-num">${i + 1}</div><div class="flow-body"><div class="flow-title">${x[0]}</div></div></div>${i < a.length - 1 ? '<div class="flow-arrow"></div>' : ''}`).join('')}</div>
+        ${tbl([
+          { label: '员工', key: 'name', bold: true },
+          { label: '累计加班', key: 'total', align: 'right' },
+          { label: '已换休', key: 'used', align: 'right' },
+          { label: '剩余额度', render: (r) => `<span class="strong">${r.left} 小时</span>`, align: 'right' },
+          { label: '有效期', key: 'valid' },
+          { label: '状态', render: (r) => H.statusTag(r.status) }
+        ], [
+          { name: '张伟', total: '36 小时', used: '16 小时', left: 20, valid: '2027-04-28', status: '正常' },
+          { name: '陈立', total: '48 小时', used: '24 小时', left: 24, valid: '2027-04-27', status: '正常' },
+          { name: '周鹏', total: '28 小时', used: '8 小时', left: 20, valid: '2027-04-26', status: '正常' },
+          { name: '吴磊', total: '32 小时', used: '32 小时', left: 0, valid: '2027-04-25', status: '已用完' },
+          { name: '刘婷', total: '12 小时', used: '4 小时', left: 8, valid: '2027-04-24', status: '正常' },
+          { name: '徐涛', total: '20 小时', used: '12 小时', left: 8, valid: '2027-04-20', status: '正常' }
+        ])}<p class="panel-note">加班累计自动折算换休额度，换休审批通过后自动扣减，形成加班—换休闭环；额度 6 个月内有效，逾期作废并提示。</p>`, '自动折算 · 审批扣减')
+});
 
   /* ===== 薪酬体系 ===== */
   window.HR_SPEC_ADD({
@@ -191,7 +207,38 @@
         { label: '浮动区间', value: '±10', unit: '%', note: '超出须报集团审批', cls: 'warn', color: '#e5a22a' }
       ]) + H.panel('基本薪酬标准（职称 / 技能等级 × 工龄档）', matrix, '单位：元 / 月 · V2026.1')
       + `<div class="two-columns"><section class="panel-card"><div class="panel-header"><h3>薪酬结构构成（统一公式）</h3><span class="panel-extra">一处维护 · 全集团复用</span></div>${struct}</section>
-        <section class="panel-card"><div class="panel-header"><h3>特殊班次与岗位津贴标准</h3><span class="panel-extra">集团统一</span></div>${allow}</section></div>`;
+        <section class="panel-card"><div class="panel-header"><h3>特殊班次与岗位津贴标准</h3><span class="panel-extra">集团统一</span></div>${allow}</section></div>`
+      + H.panel('子公司薪酬规则配置', tbl([
+        { label: '单位', key: 'unit', bold: true },
+        { label: '薪酬规则套数', key: 'rules', align: 'right' },
+        { label: '覆盖人员', key: 'people', align: 'right' },
+        { label: '差异化内容', render: (r) => `<span class="sub">${H.esc(r.scope)}</span>` },
+        { label: '配置状态', render: (r) => H.statusTag(r.status) }
+      ], [
+        { unit: '集团本部', rules: 1, people: '386 人', scope: '集团统一标准', status: '已配置' },
+        { unit: '三叶实业', rules: 2, people: '726 人', scope: '常白班 + 倒班津贴 · 37 个成本中心', status: '已配置' },
+        { unit: '汇丰石化', rules: 2, people: '618 人', scope: '特殊岗位津贴 + 夜班补贴', status: '已配置' },
+        { unit: '翔鑫工贸', rules: 2, people: '452 人', scope: '管输岗位 + 外勤补贴', status: '已配置' },
+        { unit: '维达石化', rules: 7, people: '268 人', scope: '7 套工资规则（维达反馈）', status: '已配置' },
+        { unit: '宏达人力', rules: 1, people: '246 人', scope: '派遣人员统一规则', status: '已配置' },
+        { unit: '兰达工贸', rules: 1, people: '150 人', scope: '工程承包人员规则', status: '已配置' }
+      ]), '公式配置一次、长期沿用 · 共 16 套规则')
+      + H.panel('进档管理', tbl([
+        { label: '员工', key: 'name', bold: true },
+        { label: '单位', key: 'unit' },
+        { label: '进档类型', render: (r) => H.chip(r.type, 'blue') },
+        { label: '进档周期', key: 'cycle' },
+        { label: '下次进档', key: 'next' },
+        { label: '加薪标准', key: 'add' },
+        { label: '状态', render: (r) => H.statusTag(r.status) }
+      ], [
+        { name: '张伟', unit: '集团本部', type: '年度进档', cycle: '12 个月', next: '2027-01-01', add: '1 档 / 300 元', status: '待提醒' },
+        { name: '王强', unit: '汇丰石化', type: '职称进档', cycle: '24 个月', next: '2026-12-01', add: '2 档 / 600 元', status: '待审批' },
+        { name: '李静', unit: '集团本部', type: '年度进档', cycle: '12 个月', next: '2027-04-10', add: '1 档 / 300 元', status: '待提醒' },
+        { name: '陈立', unit: '三叶实业', type: '技能进档', cycle: '36 个月', next: '2026-11-01', add: '1 档 / 400 元', status: '待审批' },
+        { name: '赵敏', unit: '集团本部', type: '年度进档', cycle: '12 个月', next: '2027-07-15', add: '1 档 / 300 元', status: '待提醒' },
+        { name: '周鹏', unit: '维达石化', type: '技能进档', cycle: '24 个月', next: '2026-12-25', add: '2 档 / 500 元', status: '已进档' }
+      ]), '到期自动提醒人事岗 · 需审批后生效');
     }
   });
 
@@ -222,7 +269,7 @@
         { label: '代扣', render: (r) => `<span class="sub">-${r.deduct.toLocaleString()}</span>`, align: 'right' },
         { label: '实发', render: (r) => `<span class="strong" style="color:#5e46c6">${r.net.toLocaleString()}</span>`, align: 'right' },
         { label: '状态', render: (r) => H.statusTag(r.status) }
-      ], D2.PAYROLL);
+      ], window.HR_SCOPE ? D2.PAYROLL.filter((r) => window.HR_SCOPE.inScope(r)) : D2.PAYROLL);
       return H.mcards([
         { label: '本月核算人数', value: '2,846', unit: '人', note: '已核算 2,712 人', color: '#7659e7' },
         { label: '应发合计', value: '862.4', unit: '万元', note: '较上月 +2.3%', color: '#4389ed' },
@@ -242,7 +289,7 @@
             <div class="mini-stat"><b>96.4 万</b><span>本月代扣个税</span></div>
             <div class="mini-stat"><b>12.8 万</b><span>其他扣款（补缴 / 借款）</span></div>
           </div>
-          <p class="panel-note">个税按累计预扣法计算，专项附加扣除（子女教育、住房贷款、赡养老人等）由员工在系统自助申报，财务复核后生效。</p></section>
+          <p class="panel-note">个税按累计预扣法计算，专项附加扣除（子女教育、住房贷款、赡养老人等）由员工自助申报；后续对接“薪福通”接口自动同步扣除数据，并与个税报税系统衔接，减少人工核对。</p></section>
         <section class="panel-card"><div class="panel-header"><h3>工资条发放</h3><span class="panel-extra">电子工资条 · 员工确认</span></div>
           <div class="bar-list">
             <div class="bar-item"><span class="b-label">已推送</span><div class="bar-track"><span class="bar-fill" style="width:100%"></span></div><b>2,846</b></div>
@@ -250,7 +297,34 @@
             <div class="bar-item"><span class="b-label">已确认</span><div class="bar-track"><span class="bar-fill green" style="width:87%"></span></div><b>2,486</b></div>
             <div class="bar-item"><span class="b-label">异议待处理</span><div class="bar-track"><span class="bar-fill orange" style="width:4%"></span></div><b>36</b></div>
           </div>
-          <p class="panel-note">工资条通过 APP / 钉钉推送，员工可查询明细并在线确认；异议自动转薪酬专员复核，确认结果留痕。</p></section></div>`;
+          <p class="panel-note">工资条通过 APP / 钉钉推送，员工可查询明细并在线确认；异议自动转薪酬专员复核，确认结果留痕。</p></section></div>`
+      + H.panel('工资总额预算与月度审批', `<div class="mini-stats">
+          <div class="mini-stat"><b>1.24 亿元</b><span>年初核定年度工资总额（员工部分）</span></div>
+          <div class="mini-stat"><b>85%</b><span>按比例分摊至各月基础额度</span></div>
+          <div class="mini-stat"><b>21 日 / 25 日</b><span>其他公司 21 日 · 三叶 25 日</span></div>
+          <div class="mini-stat"><b>4 类</b><span>新增 / 调资 / 季度奖专项通道</span></div>
+        </div>
+        <div class="chip-wall" style="margin-top:12px"><span class="chip blue">新增人员专项通道</span><span class="chip blue">调资专项通道</span><span class="chip blue">季度奖专项通道</span><span class="chip orange">额度变化自动比对</span><span class="chip orange">审批超时自动催办 / 升级提醒</span><span class="chip green">审批全程留痕</span></div>
+        <p class="panel-note">按 85% 比例分摊至各月作为当月基础薪酬额度；合理超支走专项通道，减少反复审批；子公司上报额度有变化时可比对审批。</p>`, '审批日历统一')
+      + H.panel('特殊场景核算', tbl([
+        { label: '场景', key: 'scene', bold: true, width: '180px' },
+        { label: '处理方式', render: (r) => `<span class="sub">${H.esc(r.how)}</span>` },
+        { label: '状态', render: (r) => H.statusTag(r.status) }
+      ], [
+        { scene: '内退工资', how: '按内退协议标准单独核算，不计入在岗薪酬总额', status: '已支持' },
+        { scene: '退休当月补发', how: '退休手续跨月时补发当月工资，单独生成补发单', status: '已支持' },
+        { scene: '定薪特殊人员', how: '按协议定薪，支持手动调整单人薪资并附审批说明', status: '已支持' },
+        { scene: '请假工资（21.75）', how: '按法定工作日 21.75 规则核算，允许工资倒扣甚至为负', status: '已支持' },
+        { scene: '跨年度追溯', how: '特定薪酬项可计入对应年度成本，次年发放也准确归属', status: '已支持' },
+        { scene: '离职 / 退休补发一个月', how: '保留人员历史薪资，支持离职后一次性补发并留痕', status: '已支持' }
+      ]), '按会议纪要补充场景 · 全部留痕')
+      + H.panel('年终奖计税方案对比', `<div class="two-columns"><div>
+          <div class="mini-stats" style="grid-template-columns:1fr 1fr">
+            <div class="mini-stat"><b>单独计税</b><span>年终奖单独按 3%–45% 税率计算</span></div>
+            <div class="mini-stat"><b>综合计税</b><span>并入综合所得按累计预扣法</span></div>
+          </div>
+          <p class="panel-note">系统按员工全年收入自动测算两种方案，择优推荐并留痕。</p>
+        </div><div><div class="formula">示例：年终奖 32,400 元<br>单独计税：应纳税额 ≈ 2,916 元<br>综合计税：应纳税额 ≈ 3,840 元<br><b>系统推荐：单独计税</b>（节税 924 元）</div></div></div>`, '自动测算最优');
     }
   });
 
@@ -290,6 +364,27 @@
           { label: '状态', render: (r) => H.statusTag(r.status), width: '96px' }
         ],
         rows: D2.BONUS, searchKeys: ['name', 'type'], readonly: true
+      },
+      {
+        key: 'step', label: '进档管理', title: '进档管理（自定义周期 · 到期提醒 · 审批后自动核算）',
+        columns: [
+          { label: '员工', key: 'name', bold: true, width: '90px' },
+          { label: '单位', key: 'unit', width: '110px' },
+          { label: '进档类型', render: (r) => H.chip(r.type, 'blue'), width: '100px' },
+          { label: '进档周期', key: 'cycle', width: '100px' },
+          { label: '下次进档', key: 'next', width: '110px' },
+          { label: '加薪标准', key: 'add', width: '130px' },
+          { label: '审批状态', render: (r) => H.statusTag(r.status), width: '96px' }
+        ],
+        rows: [
+          { name: '张伟', unit: '集团本部', type: '年度进档', cycle: '12 个月', next: '2027-01-01', add: '1 档 / 300 元', status: '待提醒' },
+          { name: '王强', unit: '汇丰石化', type: '职称进档', cycle: '24 个月', next: '2026-12-01', add: '2 档 / 600 元', status: '待审批' },
+          { name: '李静', unit: '集团本部', type: '年度进档', cycle: '12 个月', next: '2027-04-10', add: '1 档 / 300 元', status: '待提醒' },
+          { name: '陈立', unit: '三叶实业', type: '技能进档', cycle: '36 个月', next: '2026-11-01', add: '1 档 / 400 元', status: '待审批' },
+          { name: '赵敏', unit: '集团本部', type: '年度进档', cycle: '12 个月', next: '2027-07-15', add: '1 档 / 300 元', status: '待提醒' },
+          { name: '周鹏', unit: '维达石化', type: '技能进档', cycle: '24 个月', next: '2026-12-25', add: '2 档 / 500 元', status: '已进档' }
+        ],
+        searchKeys: ['name', 'unit', 'type'], readonly: true
       }
     ],
     meta: { entity: '调薪单', labels: { id: '单号', name: '员工', type: '调薪类型', before: '调整前', after: '调整后', date: '生效日期', status: '状态' }, fields: [
@@ -367,7 +462,13 @@
         { label: '待申报', value: '3', unit: '笔', note: '社保网上申报待提交', cls: 'warn', color: '#e5a22a' }
       ]) + H.panel('六险一金参保概况', cards, '2026 年 10 月 · 已申报')
       + `<div class="two-columns"><section class="panel-card"><div class="panel-header"><h3>参保增减员</h3><span class="panel-extra">新增 12 · 减少 8</span></div>${changes}<p class="panel-note">新入职统一办理参保，离职 / 退休当月办理减员；参保地变更同步社保关系转移。</p></section>
-        <section class="panel-card"><div class="panel-header"><h3>年度缴费基数申报（2026 年度）</h3><span class="panel-extra">完成率 100%</span></div>${bases}<p class="panel-note">基数区间 4,080–20,400 元（社平 60%–300%）；低于下限上调 12 人，高于上限封顶 8 人。</p></section></div>`;
+        <section class="panel-card"><div class="panel-header"><h3>年度缴费基数申报（2026 年度）</h3><span class="panel-extra">完成率 100%</span></div>${bases}<p class="panel-note">基数区间 4,080–20,400 元（社平 60%–300%）；低于下限上调 12 人，高于上限封顶 8 人。</p></section></div>`
+      + H.panel('社保缴费基数自动核定规则', `<div class="dot-list">
+          <div class="dot-item"><i></i>基数按上年度全年应发工资自动核算，不足一年按实际月份折算。</div>
+          <div class="dot-item"><i></i>疗养费、劳保用品、一次性奖励等不计入基数的项目自动剔除，避免基数虚高。</div>
+          <div class="dot-item"><i></i>基数调整后自动生成补收、退收单据；异常薪资（负数 / 补发）支持扣回并留痕。</div>
+          <div class="dot-item"><i></i>基数区间 4,080–20,400 元，低于下限上调、高于上限封顶，调整记录可追溯。</div>
+        </div>`, '按上年度应发工资自动核算');
     }
   });
 
@@ -475,7 +576,7 @@
       ]) + H.panel('指标库（集团统一维护，子公司可引用）', lib, '指标库 186 项 · 模板 12 套')
       + `<div class="two-columns"><section class="panel-card"><div class="panel-header"><h3>考核模板权重（按序列）</h3><span class="panel-extra">4 类序列</span></div>${tpl}</section>
         <section class="panel-card"><div class="panel-header"><h3>石化特色指标（安全环保 · 能耗 · 装置运行）</h3><span class="panel-extra">含 2 项一票否决</span></div>${special}
-        <p class="panel-note">特色指标由 HSE、能源计量、DCS/MES 系统自动取数，按季度校准，权重合计不低于 25%。</p></section></div>`;
+        <p class="panel-note">特色指标由 HSE、能源计量、DCS/MES 系统自动取数，按季度校准，权重合计不低于 25%；KPI 方式逐步向 360 评估过渡，考核结果与工资核算挂钩，分等结果及权重规则待各单位明确。</p></section></div>`;
     }
   });
 

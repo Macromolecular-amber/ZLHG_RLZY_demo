@@ -14,16 +14,24 @@
       { label: '核定编制', value: '3,000', unit: '人', note: '在册 2,846 人 · 执行率 94.9%', cls: 'up', color: '#e5a22a' }
     ],
     custom: () => {
-      const units = D2.ORG_UNITS.map((u) => `<div class="unit-card" data-act="unit" data-id="${u.name}">
+      const scoped = window.HR_SCOPE ? window.HR_SCOPE.unit() : null;
+      const list = scoped ? D2.ORG_UNITS.filter((u) => u.name === scoped) : D2.ORG_UNITS;
+      const cur = scoped ? (list[0] || {}) : null;
+      const units = list.map((u) => `<div class="unit-card" data-act="unit" data-id="${u.name}">
         <div class="u-name">${u.name}</div><div class="u-full">${H.esc(u.full)}</div>
         <div class="u-desc">${H.esc(u.desc)}</div>
         <div class="u-foot"><span>在册 <b>${u.staff}</b> 人 · 机构 ${u.nodes}</span><span>切换进入 ›</span></div></div>`).join('');
-      return H.mcards([
+      return H.mcards(scoped ? [
+        { label: '当前单位', value: window.HR_SCOPE.session.unit, note: '系统按账号识别', color: '#7659e7' },
+        { label: '本单位机构', value: String(cur.nodes || '—'), unit: '个', note: '数据按单位隔离', color: '#4389ed' },
+        { label: '本单位岗位', value: String(cur.positions || '—'), unit: '个', note: '集团标准 · 本单位执行', color: '#1cad9b' },
+        { label: '本单位在册', value: String(cur.staff || '—'), unit: '人', note: '仅本单位数据可见', cls: 'up', color: '#e5a22a' }
+      ] : [
         { label: '集团法人单位', value: '7', unit: '家', note: '集团本部 + 6 家子公司', color: '#7659e7' },
         { label: '机构节点', value: '386', unit: '个', note: '五级机构树', color: '#4389ed' },
         { label: '岗位总数', value: '1,246', unit: '个', note: '三通道管理', color: '#1cad9b' },
         { label: '在册员工', value: '2,846', unit: '人', note: '编制执行率 94.9%', cls: 'up', color: '#e5a22a' }
-      ]) + H.panel('子公司人资管理入口', `<p class="note-line" style="margin:0 0 14px">点击卡片即切换至该单位人资管理界面 —— 功能架构与本系统完全一致，数据与权限按单位隔离。</p><div class="unit-grid">${units}</div>`, '6 家子公司 · 权限隔离');
+      ]) + H.panel(scoped ? '本单位组织信息' : '子公司人资管理入口', `<p class="note-line" style="margin:0 0 14px">${scoped ? '当前账号已自动识别所属单位，仅可查看本单位机构与人员数据。' : '点击卡片即切换至该单位人资管理界面 —— 功能架构与本系统完全一致，数据与权限按单位隔离。'}</p><div class="unit-grid">${units}</div>`, scoped ? '数据按单位隔离' : '6 家子公司 · 权限隔离');
     }
   });
 
@@ -51,18 +59,21 @@
       { label: '历史版本', value: '11', unit: '个', note: '保留生效日期与审批记录', color: '#1cad9b' }
     ],
     custom: () => {
+      const scoped = window.HR_SCOPE ? window.HR_SCOPE.unit() : null;
+      const changesData = scoped ? D2.ORG_CHANGES.filter((r) => !r.unit || String(r.unit).indexOf(scoped) >= 0) : D2.ORG_CHANGES;
+      const root = scoped ? ((D2.ORG_TREE.children || []).find((c) => c.name === scoped) || D2.ORG_TREE) : D2.ORG_TREE;
       const changes = simpleTable([
         { label: '单号', key: 'id' }, { label: '类型', key: 'type' }, { label: '单位', key: 'unit' },
         { label: '变更内容', render: (r) => `<span class="sub">${r.content}</span>` },
         { label: '生效日期', key: 'date' }, { label: '状态', render: (r) => H.statusTag(r.status) }
-      ], D2.ORG_CHANGES);
+      ], changesData);
       const codes = simpleTable([
         { label: '机构', key: 'object' }, { label: '机构编码', render: (r) => `<span class="num strong">${r.code}</span>` },
         { label: '编码规则', key: 'rule' }, { label: '最近更新', key: 'updated' }
       ], D2.ORG_CODES);
       return `<div class="two-columns" style="grid-template-columns:minmax(0,420px) minmax(0,1fr)">
         <section class="panel-card"><div class="panel-header"><h3>机构树维护</h3><span class="panel-extra">386 个节点</span></div>
-          <div class="org-tree">${treeHTML(D2.ORG_TREE, 0)}</div>
+          <div class="org-tree">${treeHTML(root, 0)}</div>
           <p class="panel-note">点击节点展开 / 收起；支持机构新增、合并、撤销、划转与层级调整，变更须走审批并保留历史版本。</p></section>
         <section class="panel-card"><div class="panel-header"><h3>机构变更管理</h3><span class="panel-extra">保留历史版本与生效日期</span></div>
           ${changes}<p class="panel-note">变更审批通过后自动生成新版本，生效日期前可回滚；与财务、ERP 机构编码保持同步。</p></section>
@@ -250,6 +261,7 @@
   /* ===== 工龄 ===== */
   window.HR_SPEC_ADD({
     key: 'seniority-calc', title: '工龄计算',
+    notice: '本期暂未上线：根据 2026-10-30 汇报会纪要，工龄与司龄功能纳入后续迭代，本页为规划演示。',
     desc: '分别计算连续工龄、本企业工龄（司龄）、社会工龄；依据入职日期、调动记录自动生成工龄，支持手工修正并保留调整理由。',
     metrics: [
       { label: '平均司龄', value: '12.4', unit: '年', note: '较上年 +0.3 年', cls: 'up', color: '#7659e7' },
@@ -291,6 +303,7 @@
 
   window.HR_SPEC_ADD({
     key: 'seniority-verify', title: '工龄认定',
+    notice: '本期暂未上线：工龄认定规则随工龄模块纳入后续迭代，本页为规划演示。',
     desc: '军龄、上山下乡、原单位年限的视同工龄认定；有毒有害、高温、高空、井下作业工龄折算与提前退休条件判断。',
     metrics: [
       { label: '待认定', value: '3', unit: '人', note: '材料待补充 2 人', cls: 'warn', color: '#e5a22a' },
@@ -339,6 +352,7 @@
 
   window.HR_SPEC_ADD({
     key: 'seniority-apply', title: '工龄应用',
+    notice: '本期暂未上线：工龄待遇联动随工龄模块纳入后续迭代，本页为规划演示。',
     desc: '工龄工资标准、年休假天数、退休待遇、荣誉表彰资格的自动引用；规则一处配置，全集团执行。',
     metrics: [
       { label: '工龄工资总额', value: '620', unit: '万元/年', note: '按 20 元/年·人测算', color: '#7659e7' },
@@ -362,6 +376,7 @@
   /* ===== 合同 ===== */
   window.HR_SPEC_ADD({
     key: 'contract-manage', title: '合同管理',
+    notice: '本期暂未上线：根据汇报会纪要，劳动合同功能纳入后续迭代，本页为规划演示。',
     desc: '固定期限、无固定期限合同的签订、续签与到期预警；合同变更、解除、终止的审批流程与经济补偿测算。',
     metrics: [
       { label: '在册合同', value: '2,846', unit: '份', note: '签订率 100%', cls: 'up', color: '#7659e7' },
@@ -408,6 +423,7 @@
 
   window.HR_SPEC_ADD({
     key: 'contract-agreement', title: '协议管理',
+    notice: '本期暂未上线：协议管理随劳动合同模块纳入后续迭代，电子网签作为后续方向。',
     desc: '保密协议、竞业限制协议、培训服务期协议的签订、履约跟踪与到期提醒，与劳动合同、岗位、薪酬联动。',
     metrics: [
       { label: '有效协议', value: '286', unit: '份', note: '保密 168 · 竞业 62 · 服务期 56', color: '#7659e7' },
@@ -434,6 +450,7 @@
 
   window.HR_SPEC_ADD({
     key: 'contract-dispute', title: '劳动争议',
+    notice: '本期暂未上线：劳动争议处理随劳动合同模块纳入后续迭代，本页为规划演示。',
     desc: '劳动争议登记、调解、仲裁、诉讼的过程记录与归档，全过程留痕并关联合同、薪酬、考勤证据。',
     metrics: [
       { label: '在办争议', value: '3', unit: '起', note: '调解 1 · 仲裁 1 · 诉讼 1', cls: 'warn', color: '#e5a22a' },
@@ -559,26 +576,56 @@
 
   window.HR_SPEC_ADD({
     key: 'recruit-type', title: '招聘类型',
-    desc: '校园招聘、社会招聘、内部竞聘、退役军人安置、高层次人才引进、劳务协作等多元招聘渠道统一管理，按类型配置流程与预算。',
+    desc: '按校园招聘平台、系统内部公开招聘平台、社会化招聘平台三类平台统一管理，支持校招 / 社招 / 猎头 / 内部竞聘分类统计；应届高校毕业生转正定级单独线上办理。',
     metrics: [
-      { label: '招聘类型', value: '6', unit: '类', note: '覆盖多元用工场景', color: '#7659e7' },
+      { label: '招聘平台', value: '3', unit: '类', note: '校园 / 内部公开 / 社会化', color: '#7659e7' },
       { label: '计划招聘', value: '59', unit: '人', note: '2026 年四季度', color: '#4389ed' },
       { label: '已完成', value: '28', unit: '人', note: '完成率 47.5%', cls: 'up', color: '#1cad9b' },
-      { label: '专项预算', value: '38', unit: '万元', note: '校招 18 · 引才 20', color: '#e5a22a' }
+      { label: '应届生定级', value: '7', unit: '人', note: '线上考核 / 答辩 / 公示', color: '#e5a22a' }
     ],
-    columns: [
-      { label: '招聘类型', key: 'type', bold: true, width: '160px' },
-      { label: '计划人数', key: 'plan', width: '100px' },
-      { label: '完成进度', key: 'progress', width: '140px' },
-      { label: '渠道 / 来源', render: (r) => `<span class="sub">${H.esc(r.channel)}</span>`, width: '280px' },
-      { label: '状态', render: (r) => H.statusTag(r.status), width: '96px' }
+    tabs: [
+      {
+        key: 'platform', label: '招聘平台', title: '三类招聘平台与分类统计',
+        columns: [
+          { label: '招聘类型', key: 'type', bold: true, width: '180px' },
+          { label: '计划人数', key: 'plan', width: '100px' },
+          { label: '完成进度', key: 'progress', width: '150px' },
+          { label: '渠道 / 来源', render: (r) => `<span class="sub">${H.esc(r.channel)}</span>`, width: '300px' },
+          { label: '状态', render: (r) => H.statusTag(r.status), width: '96px' }
+        ],
+        rows: D2.RECRUIT_TYPES, searchKeys: ['type', 'channel'],
+        filter: { key: 'status', options: ['进行中', '待启动'], label: '全部状态' }
+      },
+      {
+        key: 'graduate', label: '应届生转正定级', title: '应届高校毕业生转正定级（线上考核 · 答辩 · 公示 · 电子证明）',
+        columns: [
+          { label: '单号', key: 'id', width: '120px' },
+          { label: '学生', key: 'name', bold: true, width: '90px' },
+          { label: '院校 / 专业', render: (r) => `<div>${H.esc(r.school)}</div><div class="sub">${H.esc(r.major)}</div>`, width: '210px' },
+          { label: '定级岗位', render: (r) => `<span class="sub">${H.esc(r.post)}</span>`, width: '200px' },
+          { label: '当前环节', key: 'stage', render: (r) => H.chip(r.stage, 'blue'), width: '110px' },
+          { label: '专家评分', key: 'score', width: '80px', align: 'center' },
+          { label: '结果公示', key: 'publish', width: '130px' },
+          { label: '电子证明', render: (r) => H.statusTag(r.proof === '已发放' ? '已发放' : '待生成'), width: '100px' },
+          { label: '状态', render: (r) => H.statusTag(r.status), width: '90px' }
+        ],
+        rows: D2.GRADUATE_DEFENSE, searchKeys: ['name', 'school', 'major', 'post'],
+        filter: { key: 'status', options: ['进行中', '公示中', '已完成'], label: '全部状态' }, readonly: true
+      }
     ],
-    rows: D2.RECRUIT_TYPES, searchKeys: ['type', 'channel'],
-    filter: { key: 'status', options: ['进行中', '待启动'], label: '全部状态' },
     meta: { entity: '招聘项目', labels: { type: '招聘类型', plan: '计划人数', progress: '完成进度', channel: '渠道 / 来源', status: '状态' }, fields: [
-      { key: 'type', label: '招聘类型', type: 'select', options: ['校园招聘', '社会招聘', '内部竞聘', '退役军人安置', '高层次人才引进', '劳务协作'], required: true },
+      { key: 'type', label: '招聘类型', type: 'select', options: ['校园招聘平台', '内部公开招聘平台', '社会化招聘平台', '猎头寻访', '退役军人安置', '劳务协作'], required: true },
       { key: 'plan', label: '计划人数' }, { key: 'channel', label: '渠道 / 来源' }
     ] },
-    extra: () => H.panel('多元招聘说明', `<div class="chip-wall">${['校园招聘：与兰州石化职院、兰州理工建立定向培养', '社会招聘：BOSS直聘 / 智联 / 前程无忧三渠道', '内部竞聘：集团内部人才市场统一发布', '退役军人安置：与兰州市退役军人事务局合作', '高层次人才引进：博士 / 正高职称一事一议', '劳务协作：宏达人力提供派遣支持'].map((x) => `<span class="chip blue">${x}</span>`).join('')}</div>`, '2026 年四季度')
+    extra: () => `<div class="two-columns">
+      <section class="panel-card"><div class="panel-header"><h3>三类招聘平台</h3><span class="panel-extra">平台内统一办理</span></div>
+        <div class="dot-list">
+          <div class="dot-item"><i></i>校园招聘平台：启事发布、公示、中介协调、高校对接统一在平台内办理，简历自动回流人才库。</div>
+          <div class="dot-item"><i></i>内部公开招聘平台：面向集团全体员工发布岗位，笔试、面试、录用全流程线上留痕。</div>
+          <div class="dot-item"><i></i>社会化招聘平台：对接 BOSS直聘 / 智联 / 前程无忧接口自动抓取简历，支持猎头寻访与新材料人才引进。</div>
+        </div></section>
+      <section class="panel-card"><div class="panel-header"><h3>应届生转正定级流程</h3><span class="panel-extra">控制操作复杂度</span></div>
+        <div class="flow-row">${[['学生上传材料'], ['专家评分'], ['答辩考核'], ['结果公示 7 天'], ['生成台账 / 电子证明']].map((x, i, a) => `<div class="flow-node ${i === 2 ? 'active' : ''}"><div class="flow-num">${i + 1}</div><div class="flow-body"><div class="flow-title">${x[0]}</div></div></div>${i < a.length - 1 ? '<div class="flow-arrow"></div>' : ''}`).join('')}</div>
+        <p class="panel-note">全过程考核、答辩、结果公示线上流转，最终生成线上台账并发放电子证明。</p></section></div>`
   });
 })();

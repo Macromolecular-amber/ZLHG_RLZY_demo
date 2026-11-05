@@ -10,6 +10,117 @@
     pageSize: 10
   };
 
+  /* ---------- 账号与单位范围（登录自动识别） ---------- */
+  const ACCOUNTS = {
+    admin: { unit: '集团总部', label: '中陆化工集团 · 集团总部', scope: null, password: 'admin123' },
+    sanye: { unit: '三叶实业', label: '兰州三叶实业有限公司', scope: '三叶实业', password: '123456' },
+    huifeng: { unit: '汇丰石化', label: '兰州汇丰石化有限公司', scope: '汇丰石化', password: '123456' },
+    xiangxin: { unit: '翔鑫工贸', label: '兰州翔鑫工贸有限责任公司', scope: '翔鑫工贸', password: '123456' },
+    weida: { unit: '维达石化', label: '兰州维达石化工程有限公司', scope: '维达石化', password: '123456' },
+    hongda: { unit: '宏达人力', label: '兰州宏达人力资源服务有限公司', scope: '宏达人力', password: '123456' },
+    landa: { unit: '兰达工贸', label: '兰州兰达工贸有限公司', scope: '兰达工贸', password: '123456' }
+  };
+  const session = { account: 'admin', unit: '集团总部', label: '中陆化工集团 · 集团总部', scope: null };
+
+  function loadSession() {
+    try {
+      const s = JSON.parse(localStorage.getItem('hr_demo_session') || 'null');
+      if (s && ACCOUNTS[s.account]) {
+        const a = ACCOUNTS[s.account];
+        session.account = s.account;
+        session.unit = a.unit;
+        session.label = a.label;
+        session.scope = a.scope;
+        return true;
+      }
+    } catch (e) { /* 忽略 */ }
+    return false;
+  }
+  function saveSession() {
+    try { localStorage.setItem('hr_demo_session', JSON.stringify({ account: session.account })); } catch (e) { /* 忽略 */ }
+  }
+  function clearSession() {
+    try { localStorage.removeItem('hr_demo_session'); } catch (e) { /* 忽略 */ }
+  }
+  function scopeUnit() { return session.scope; }
+  function inScope(row) {
+    const u = scopeUnit();
+    if (!u || !row) return true;
+    const val = row.unit || row.company || row.unitName
+      || (row.emp && (row.emp.unit || row.emp.company))
+      || (row.row && row.row.unit) || '';
+    if (!val) return true;
+    return String(val).indexOf(u) >= 0;
+  }
+
+  function applyScopeUI() {
+    const name = $('.user-name');
+    const dept = $('.user-dept');
+    if (name) name.textContent = session.account;
+    if (dept) dept.textContent = session.unit === '集团总部' ? '中陆化工集团' : session.label;
+    const chip = $('#scopeChip');
+    if (chip) {
+      if (scopeUnit()) { chip.textContent = session.unit + ' · 数据隔离'; chip.style.display = 'inline-flex'; }
+      else { chip.textContent = '全集团视图'; chip.style.display = 'inline-flex'; }
+    }
+  }
+
+  function showLogin() {
+    const page = $('#loginPage');
+    if (!page) return;
+    page.classList.remove('hidden');
+    const acc = $('#loginAccount');
+    if (acc) { acc.value = session.account || ''; const a = ACCOUNTS[(acc.value || '').trim().toLowerCase()]; updateDetect(a); }
+    const pwd = $('#loginPassword');
+    if (pwd) pwd.value = '';
+    const err = $('#loginError');
+    if (err) err.textContent = '';
+    setTimeout(() => { if (acc) acc.focus(); }, 60);
+  }
+  function hideLogin() { const page = $('#loginPage'); if (page) page.classList.add('hidden'); }
+
+  function updateDetect(acc) {
+    const box = $('#loginDetect');
+    const text = $('#loginDetectText');
+    if (!box || !text) return;
+    if (acc) {
+      box.classList.add('ok');
+      text.innerHTML = `已识别所属单位：<b>${esc(acc.label)}</b>（${esc(acc.unit)}）`;
+    } else {
+      box.classList.remove('ok');
+      text.textContent = '输入账号后自动识别所属单位';
+    }
+  }
+
+  function initLogin() {
+    const acc = $('#loginAccount');
+    const pwd = $('#loginPassword');
+    const btn = $('#loginBtn');
+    if (!acc || !btn) return;
+    acc.addEventListener('input', () => {
+      updateDetect(ACCOUNTS[acc.value.trim().toLowerCase()]);
+      const err = $('#loginError'); if (err) err.textContent = '';
+    });
+    pwd.addEventListener('keydown', (e) => { if (e.key === 'Enter') btn.click(); });
+    acc.addEventListener('keydown', (e) => { if (e.key === 'Enter') pwd.focus(); });
+    btn.addEventListener('click', () => {
+      const account = acc.value.trim().toLowerCase();
+      const info = ACCOUNTS[account];
+      const err = $('#loginError');
+      if (!info) { if (err) err.textContent = '账号不存在，请使用下方演示账号'; return; }
+      if (pwd.value !== info.password) { if (err) err.textContent = '密码不正确，请重新输入'; return; }
+      session.account = account;
+      session.unit = info.unit;
+      session.label = info.label;
+      session.scope = info.scope;
+      saveSession();
+      hideLogin();
+      applyScopeUI();
+      goPage('home');
+      toast(`登录成功：${info.label}，仅显示本单位数据`, 'success');
+    });
+  }
+
   /* ---------- 工具 ---------- */
   const $ = (sel, root) => (root || document).querySelector(sel);
   const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
@@ -83,7 +194,7 @@
         const key = c.p || c;
         const label = c.t || c;
         const active = key === state.page ? ' active' : '';
-        return `<li class="menu-item${active}" data-page="${key}">${esc(label)}</li>`;
+        return `<li class="menu-item${active}" data-page="${key}">${esc(label)}${c.tag ? `<span class="m-tag">${esc(c.tag)}</span>` : ''}</li>`;
       }).join('');
       const groupActive = (g.children || []).some((c) => (c.p || c) === state.page);
       return `<li class="menu-group${groupActive ? ' open' : ''}">
@@ -123,7 +234,11 @@
   function initHeader() {
     $('#menuToggle').addEventListener('click', () => $('#sidebar').classList.toggle('collapse'));
     $('#notifyBell').addEventListener('click', () => toast('12 项待办：证件到期 7 · 合同到期 3 · 转正办理 2', 'warn'));
-    $('#logoutBtn').addEventListener('click', () => toast('演示环境，退出操作未启用', 'warn'));
+    $('#logoutBtn').addEventListener('click', () => {
+      clearSession();
+      showLogin();
+      toast('已退出登录，请重新输入账号密码', 'info');
+    });
     const search = $('#globalSearch');
     search.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && search.value.trim()) {
@@ -215,7 +330,8 @@
   function tableBlock(page, tab) {
     const key = fk(page, tab);
     const cols = PAGES[page].columns[tab]();
-    const rows = PAGES[page].rows(tab, state.filters[key] || {});
+    let rows = PAGES[page].rows(tab, state.filters[key] || {});
+    rows = rows.filter(inScope);
     const total = rows.length;
     const pages = Math.max(1, Math.ceil(total / state.pageSize));
     const pageNo = Math.min(state.pageNo[key] || 1, pages);
@@ -234,6 +350,17 @@
   }
 
   /* ---------- 页面定义 ---------- */
+  const SELF_APPLIES = [
+    { id: 'ZZ-2026-031', empNo: 'ZL10001', name: '张伟', unit: '集团本部', item: '基础信息', detail: '现居住地址变更（西固区玉门街 12 号 → 福利路 66 号）', submit: '2026-10-28', status: '待审批', approver: '李静' },
+    { id: 'ZZ-2026-030', empNo: 'ZL10002', name: '李静', unit: '集团本部', item: '家庭成员', detail: '新增子女信息（王梓涵，2026-09 出生）', submit: '2026-10-27', status: '已通过', approver: '王芳' },
+    { id: 'ZZ-2026-029', empNo: 'ZL10005', name: '陈立', unit: '三叶实业', item: '学历变动', detail: '在职本科毕业（兰州理工大学 2021-12）补录', submit: '2026-10-26', status: '已通过', approver: '李静' },
+    { id: 'ZZ-2026-028', empNo: 'ZL10008', name: '周鹏', unit: '维达石化', item: '资质证照', detail: '新增高处作业证（有效期至 2026-08-15）', submit: '2026-10-25', status: '待审批', approver: '郑霞' },
+    { id: 'ZZ-2026-027', empNo: 'ZL10006', name: '刘婷', unit: '翔鑫工贸', item: '基础信息', detail: '手机号变更', submit: '2026-10-24', status: '已通过', approver: '郑霞' },
+    { id: 'ZZ-2026-026', empNo: 'ZL10011', name: '马超', unit: '三叶实业', item: '家庭成员', detail: '新增父母联系电话', submit: '2026-10-23', status: '已驳回', approver: '陈立' },
+    { id: 'ZZ-2026-025', empNo: 'ZL10004', name: '赵敏', unit: '集团本部', item: '学历变动', detail: '中级会计职称电子证书上传', submit: '2026-10-22', status: '已通过', approver: '王军' },
+    { id: 'ZZ-2026-024', empNo: 'ZL10014', name: '徐涛', unit: '维达石化', item: '基础信息', detail: '紧急联系人变更', submit: '2026-10-21', status: '待审批', approver: '陈立' }
+  ];
+
   const PAGES = {
     basic: {
       title: '基础信息',
@@ -251,7 +378,8 @@
       ],
       tabs: [
         { key: 'profile', label: '个人信息档案' },
-        { key: 'docs', label: '证件信息' }
+        { key: 'docs', label: '证件信息' },
+        { key: 'self', label: '自助变更申请' }
       ],
       columns: {
         profile: () => [
@@ -276,12 +404,26 @@
           { label: '剩余期限', width: '120px', render: (r) => `<span class="sub">${esc(leftText(r.doc.validTo))}</span>` },
           { label: '归档文件', width: '230px', render: (r) => r.doc.files.map((f) => `<a class="link-btn" data-act="preview" data-id="${r.emp.no}">${esc(f)}</a>`).join(' ') },
           { label: '操作', width: '110px', render: (r) => `<div class="actions"><button class="link-btn" data-act="preview">预览</button><button class="link-btn muted" data-act="upload-doc" data-id="${r.emp.no}">补充</button></div>` }
+        ],
+        self: () => [
+          { label: '单号', width: '120px', render: (r) => `<span class="num">${esc(r.id)}</span>` },
+          { label: '员工', width: '150px', render: (r) => `<div><div class="strong">${esc(r.name)}</div><div class="sub">${esc(r.empNo)}</div></div>` },
+          { label: '变更事项', width: '110px', render: (r) => softChip(r.item, 'blue') },
+          { label: '变更内容', width: '330px', render: (r) => `<span class="sub">${esc(r.detail)}</span>` },
+          { label: '提交时间', width: '110px', render: (r) => `<span class="num">${esc(r.submit)}</span>` },
+          { label: '审批人', width: '80px', render: (r) => esc(r.approver) },
+          { label: '状态', width: '96px', render: (r) => statusTag(r.status) },
+          { label: '操作', width: '90px', render: (r) => (r.status === '待审批' ? `<button class="link-btn" data-act="approve-self" data-id="${r.id}">审批</button>` : '<span class="sub">—</span>') }
         ]
       },
       rows: (tab, f) => {
         if (tab === 'profile') {
           return D.EMPLOYEES.filter((e) => (!f.q || [e.name, e.no, e.phone].some((v) => String(v).includes(f.q)))
             && (!f.unit || e.unit === f.unit) && (!f.status || e.status === f.status));
+        }
+        if (tab === 'self') {
+          return SELF_APPLIES.filter((r) => (!f.q || [r.name, r.empNo, r.detail].some((v) => String(v).includes(f.q)))
+            && (!f.status || r.status === f.status));
         }
         const list = [];
         D.EMPLOYEES.forEach((e) => e.docs.forEach((d) => list.push({ emp: e, doc: d })));
@@ -293,7 +435,14 @@
           const k = fk('basic', 'profile');
           return {
             title: '员工基础信息台账', extra: exportBtn('basic', 'profile'),
-            filters: () => searchBox(k, '搜索姓名、工号或手机号') + selectBox(k, 'unit', D.UNITS, '全部单位') + selectBox(k, 'status', ['在职', '试用期', '离职'], '全部状态')
+            filters: () => searchBox(k, '搜索姓名、工号或手机号') + selectBox(k, 'unit', D.UNITS, '全部单位') + selectBox(k, 'status', ['在职', '试用期', '内退', '离职', '退休'], '全部状态')
+          };
+        }
+        if (tab === 'self') {
+          const k = fk('basic', 'self');
+          return {
+            title: '员工自助变更申请（人事审批后生效）', extra: exportBtn('basic', 'self'),
+            filters: () => searchBox(k, '搜索姓名、工号或变更内容') + selectBox(k, 'status', ['待审批', '已通过', '已驳回'], '全部状态')
           };
         }
         const k = fk('basic', 'docs');
@@ -301,12 +450,22 @@
           title: '证件归档与有效期提醒', extra: exportBtn('basic', 'docs'),
           filters: () => searchBox(k, '搜索姓名或证件名称') + selectBox(k, 'dtype', ['身份证', '户口本', '学历学位证书', '职业资格证', '特种作业', '注册资格'], '全部证件类型') + selectBox(k, 'status', ['已归档', '待补充', '即将到期', '已逾期'], '全部状态')
         };
-      }
+      },
+      extra: () => `<div class="two-columns">
+        <section class="panel-card"><div class="panel-header"><h3>统一工号与数据留痕</h3><span class="panel-extra">全集团唯一</span></div>
+          <div class="dot-list">
+            <div class="dot-item"><i></i>员工工号全集团唯一（ZL + 5 位流水），入职即分配、终生不变，跨单位调动不重新编号。</div>
+            <div class="dot-item"><i></i>人员异动、离职、退休后历史信息永久留痕，系统不提供物理删除，仅可作状态变更。</div>
+            <div class="dot-item"><i></i>自助变更申请经人事部门审批后生效，审批前数据保持原值，全过程可追溯。</div>
+          </div></section>
+        <section class="panel-card"><div class="panel-header"><h3>用工类型覆盖</h3><span class="panel-extra">全部用工形态</span></div>
+          <div class="chip-wall">${['正式工', '劳务派遣', '业务承包', '返聘', '实习', '内退', '退休'].map((x) => `<span class="chip blue">${x}</span>`).join('')}</div>
+          <p class="panel-note">覆盖正式工、劳务派遣、业务承包、返聘、实习、内退、退休等全部用工类型，按类型配置不同的合同、薪酬与社保规则。</p></section></div>`
     },
 
     work: {
       title: '工作信息',
-      desc: '覆盖员工编号、用工性质、所属单位、部门、岗位、直接上级，以及入职日期、试用期、转正日期、司龄工龄与在职状态的全生命周期维护。',
+      desc: '覆盖员工编号、用工性质（正式工 / 劳务派遣 / 业务承包 / 返聘 / 实习 / 内退 / 退休）、所属单位、部门、岗位、直接上级，以及入职日期、试用期、转正日期、司龄工龄与在职状态的全生命周期维护；员工编号全集团唯一，历史信息永久留痕。',
       actions: [
         { label: '新增用工登记', icon: 'plus', primary: true, act: 'add-work' },
         { label: '转正办理', act: 'regular' },
@@ -323,7 +482,7 @@
         ledger: () => [
           { label: '员工编号', width: '92px', render: (e) => `<span class="num">${esc(e.no)}</span>` },
           { label: '姓名', width: '150px', render: (e) => empTag(e) },
-          { label: '用工性质', width: '96px', render: (e) => softChip(e.employment, e.employment === '正式工' ? 'blue' : e.employment === '劳务派遣' ? 'purple' : e.employment === '返聘' ? 'orange' : 'gray') },
+          { label: '用工性质', width: '96px', render: (e) => softChip(e.employment, e.employment === '正式工' ? 'blue' : e.employment === '劳务派遣' ? 'purple' : e.employment === '业务承包' ? 'green' : e.employment === '返聘' ? 'orange' : 'gray') },
           { label: '所属单位', width: '96px', render: (e) => esc(e.unit) },
           { label: '部门', width: '116px', render: (e) => esc(e.dept) },
           { label: '岗位', width: '110px', render: (e) => esc(e.position) },
@@ -341,7 +500,7 @@
         const k = fk('work', 'ledger');
         return {
           title: '员工在职台账（用工属性 · 在职状态）', extra: exportBtn('work', 'ledger'),
-          filters: () => searchBox(k, '搜索姓名、工号或岗位') + selectBox(k, 'unit', D.UNITS, '全部单位') + selectBox(k, 'employment', ['正式工', '劳务派遣', '返聘', '实习'], '全部用工性质') + selectBox(k, 'status', ['在职', '试用期', '离职'], '全部状态')
+          filters: () => searchBox(k, '搜索姓名、工号或岗位') + selectBox(k, 'unit', D.UNITS, '全部单位') + selectBox(k, 'employment', ['正式工', '劳务派遣', '业务承包', '返聘', '实习', '内退', '退休'], '全部用工性质') + selectBox(k, 'status', ['在职', '试用期', '内退', '离职', '退休'], '全部状态')
         };
       },
       extra: () => `<div class="two-columns">
@@ -480,17 +639,19 @@
 
     archive: {
       title: '人事档案',
-      desc: '纸质人事档案扫描入库、目录索引维护、借阅与转递登记；档案状态（在库 / 借出 / 转递中）实时可查，全过程留痕。',
+      desc: '按人事档案 10 类标准完成材料电子化归档，优先完成专业技术人员以上层级人员档案数字化；纸质档案扫描入库、目录索引维护、移交 / 查阅 / 借阅全流程线上审批并生成审批单留痕；从明年起新入职大学生档案直接同步电子化归档。',
       actions: [
         { label: '新建档案', icon: 'plus', primary: true, act: 'add-archive' },
         { label: '扫描入库', icon: 'upload', act: 'scan' },
+        { label: '移交登记', act: 'archive-transfer' },
+        { label: '查阅审批', act: 'archive-read' },
         { label: '导出', icon: 'download', act: 'export' }
       ],
       metrics: [
-        { label: '档案总数', value: '2,846', unit: '册', note: '覆盖全部在册员工', color: '#7659e7' },
-        { label: '已电子化', value: '2,713', unit: '册', note: '电子化率 95.3%', cls: 'up', color: '#1cad9b' },
-        { label: '借阅中', value: '12', unit: '册', note: '超期未还 2 册', cls: 'warn', color: '#e5a22a' },
-        { label: '待转递', value: '6', unit: '册', note: '离职 / 调动转递', color: '#4389ed' }
+        { label: '档案总数', value: '2,080', unit: '本', note: '含石化集体档案 + 自有档案', color: '#7659e7' },
+        { label: '已电子化', value: '1,913', unit: '本', note: '电子化率 92.0%', cls: 'up', color: '#1cad9b' },
+        { label: '借阅中', value: '12', unit: '本', note: '超期未还 2 本', cls: 'warn', color: '#e5a22a' },
+        { label: '待转递', value: '6', unit: '本', note: '离职 / 调动转递', color: '#4389ed' }
       ],
       tabs: [
         { key: 'ledger', label: '档案台账' },
@@ -541,7 +702,17 @@
           title: '借阅与转递登记', extra: exportBtn('archive', 'borrow'),
           filters: () => searchBox(k, '搜索姓名、档案编号或事由') + selectBox(k, 'type', ['借阅', '转递'], '全部业务类型') + selectBox(k, 'status', ['借阅中', '转递中', '已归还'], '全部状态')
         };
-      }
+      },
+      extra: () => `<div class="two-columns">
+        <section class="panel-card"><div class="panel-header"><h3>档案材料 10 类标准</h3><span class="panel-extra">按标准归档</span></div>
+          <div class="chip-wall">${['履历材料', '自传 / 资料材料', '鉴定考核材料', '学历学位材料', '专业技术职务评级材料', '科研学术材料', '培训材料', '政审材料', '奖励材料', '处分材料', '劳动合同及工资任免材料', '出国 / 人大 / 其他材料'].map((x) => `<span class="chip blue">${x}</span>`).join('')}</div>
+          <p class="panel-note">优先完成专业技术人员以上层级人员档案数字化，后续逐步覆盖全员；从明年起新入职大学生档案直接同步电子化归档。</p></section>
+        <section class="panel-card"><div class="panel-header"><h3>查阅 / 移交审批要求</h3><span class="panel-extra">盖章留痕</span></div>
+          <div class="dot-list">
+            <div class="dot-item"><i></i>查阅、复印须填写《查阅档案审批表》，经单位盖章后生效，系统自动留存审批单。</div>
+            <div class="dot-item"><i></i>档案材料移交须生成移交单并由移交、接收双方单位盖章，所有文件一式两份。</div>
+            <div class="dot-item"><i></i>全部操作线上提交、审批、留痕，纸质与电子档案一一对应。</div>
+          </div></section></div>`
     }
   };
 
@@ -566,7 +737,7 @@
     const cur = state.tab[page];
     return `<div class="tabs">${p.tabs.map((t) => {
       let count = 0;
-      try { count = (p.rows(t.key, {}) || []).length; } catch (e) { count = 0; }
+      try { count = (p.rows(t.key, {}) || []).filter(inScope).length; } catch (e) { count = 0; }
       return `<button class="tab-btn${t.key === cur ? ' active' : ''}" data-tab="${t.key}">${esc(t.label)}<span class="tab-count">${count}</span></button>`;
     }).join('')}</div>`;
   }
@@ -579,6 +750,16 @@
     }
   }
 
+  function unitMetrics() {
+    const info = (window.HR_DATA2.ORG_UNITS.find((u) => u.name === session.unit) || {});
+    return [
+      { label: '当前单位', value: session.unit, note: session.label, color: '#7659e7' },
+      { label: '本单位在册', value: String(info.staff || '—'), unit: '人', note: '仅统计本单位', color: '#4389ed' },
+      { label: '本单位机构', value: String(info.nodes || '—'), unit: '个', note: '按单位隔离', color: '#1cad9b' },
+      { label: '数据范围', value: '本单位', note: '集团汇总不可见', color: '#e5a22a' }
+    ];
+  }
+
   function renderPageInner() {
     if (state.page === 'home') { showHome(); return; }
     const page = state.page;
@@ -587,14 +768,20 @@
     if (!p.tabs || !p.tabs.length) p.tabs = [{ key: 'main', label: '' }];
     if (!state.tab[page]) state.tab[page] = p.tabs[0].key;
     const tab = state.tab[page];
+    const notice = p.notice ? `<div class="page-notice">${esc(p.notice)}</div>` : '';
+    const scopeNotice = scopeUnit()
+      ? `<div class="page-notice blue">当前登录单位：<b>${esc(session.label)}</b> · 仅显示本单位管辖范围内数据，集团汇总与跨单位数据不可见。</div>`
+      : '';
     if (p.custom) {
-      $('#page').innerHTML = heading(page) + p.custom(tab);
+      $('#page').innerHTML = heading(page) + notice + scopeNotice + p.custom(tab);
       return;
     }
     const panel = p.panel(tab);
     const b = tableBlock(page, tab);
     $('#page').innerHTML = heading(page)
-      + metrics(p.metrics)
+      + notice
+      + scopeNotice
+      + metrics(scopeUnit() ? unitMetrics() : p.metrics)
       + `<section class="panel-card">
           <div class="panel-header"><h3>${esc(panel.title)}</h3><span class="panel-extra" id="panelCount">共 ${b.total} 条</span></div>
           ${tabsHTML(page)}
@@ -662,6 +849,8 @@
       case 'view-cert': return certDrawer(D.CERTS.find((c) => c.id === id));
       case 'add-archive': return toast('新建档案：请先在「扫描入库」中上传档案目录与扫描件', 'info');
       case 'scan': return toast('扫描入库队列：待处理 133 册，预计 2 个工作日完成电子化', 'info');
+      case 'archive-transfer': return toast('已生成档案材料移交单：需移交、接收双方单位盖章，文件一式两份', 'success');
+      case 'archive-read': return toast('已打开《查阅档案审批表》：需单位盖章后生效，审批单自动留痕', 'info');
       case 'view-catalog': return catalogDrawer(D.ARCHIVES.find((a) => a.no === id));
       case 'borrow-archive': return borrowForm(D.ARCHIVES.find((a) => a.no === id), '借阅');
       case 'transfer-archive': return borrowForm(D.ARCHIVES.find((a) => a.no === id), '转递');
@@ -674,8 +863,15 @@
       case 'g-view': return genericView(state.page, id);
       case 'g-edit': return genericEdit(state.page, id);
       case 'g-add': return genericEdit(state.page, null);
+      case 'approve-self': {
+        const app = SELF_APPLIES.find((x) => x.id === id);
+        if (app) { app.status = '已通过'; toast(`自助申请 ${app.id} 已审批通过，变更内容即时生效并留痕`, 'success'); renderPage(); }
+        return;
+      }
       case 'toast': return toast(id || '操作已完成', 'success');
-      case 'unit': return toast('已切换至 ' + id + ' 人资管理界面（演示环境保持当前数据）', 'info');
+      case 'unit':
+        if (scopeUnit() && String(id) !== session.unit) return toast('无权访问其他单位数据：当前账号仅限 ' + session.unit, 'warn');
+        return toast('已切换至 ' + id + ' 人资管理界面（演示环境保持当前数据）', 'info');
       case 'tree-toggle': return toast('机构节点已展开 / 收起', 'info');
       default:
         if (PAGES[state.page] && PAGES[state.page].onAction) return PAGES[state.page].onAction(act, id);
@@ -760,7 +956,7 @@
       toast('该页面为汇总看板，暂无可导出的明细数据', 'info');
       return;
     }
-    const rows = PAGES[page].rows(tab, state.filters[fk(page, tab)] || {});
+    const rows = PAGES[page].rows(tab, state.filters[fk(page, tab)] || {}).filter(inScope);
     let headers = [], lines = [];
     if (page === 'basic' && tab === 'profile') {
       headers = ['工号', '姓名', '性别', '出生日期', '身份证号', '民族', '政治面貌', '籍贯', '婚姻', '手机号', '所属单位', '部门', '岗位', '在职状态'];
@@ -1113,7 +1309,7 @@
     openDrawer({
       title: `档案目录 · ${a.empName}`,
       body: `<div class="detail-hero"><strong>${esc(a.no)}</strong><span>${esc(a.empName)} · ${esc(a.unit)} / ${esc(a.dept)}　${statusTag(a.status)}　${esc(a.volumes)} 册</span></div>
-        <div class="detail-section"><h4>档案目录索引（共 10 类）</h4>
+        <div class="detail-section"><h4>档案目录索引（按 10 类标准细分 12 项）</h4>
           <div class="catalog-tree">${D.CATALOG.map((c, i) => `<div class="catalog-item"><span class="c-no">${String(i + 1).padStart(2, '0')}</span><span class="c-name">${esc(c.name)}</span><span class="c-no">${c.count} 份</span>${statusTag(c.status)}</div>`).join('')}</div></div>
         <div class="detail-section"><h4>档案信息</h4><dl class="desc-grid">
           <dt>入库日期</dt><dd>${esc(a.inDate)}</dd><dt>存放位置</dt><dd>${esc(a.location)}</dd>
@@ -1176,33 +1372,63 @@
         <div class="u-desc">${esc((g.children || []).map((c) => c.t).join(' · '))}</div>
         <div class="u-foot"><span>进入模块</span><b>›</b></div></div>`;
     }).join('');
-    $('#page').innerHTML = `<div class="page-heading"><div class="heading-main"><div>
-        <h1>中陆化工人力资源管理系统 · 功能演示</h1>
-        <p>覆盖 16 个一级模块、50 个二级功能，严格对应《人力资源管理系统功能明细》；全部为前端交互演示，数据为虚构样例。</p>
-      </div></div></div>` + metrics([
+    const scoped = scopeUnit();
+    const unitInfo = scoped ? (window.HR_DATA2.ORG_UNITS.find((u) => u.name === scoped) || {}) : null;
+    const homeMetrics = scoped ? [
+      { label: '当前单位', value: session.unit, note: session.label, color: '#7659e7' },
+      { label: '本单位在册', value: String(unitInfo.staff || '—'), unit: '人', note: session.label, color: '#4389ed' },
+      { label: '本单位机构', value: String(unitInfo.nodes || '—'), unit: '个', note: '数据按单位隔离', color: '#1cad9b' },
+      { label: '本单位岗位', value: String(unitInfo.positions || '—'), unit: '个', note: '集团标准 · 本地执行', color: '#e5a22a' }
+    ] : [
       { label: '一级模块', value: '16', unit: '个', note: '组织机构 → 报表系统管理', color: '#7659e7' },
       { label: '二级功能', value: '50', unit: '个', note: '全部可点击进入', color: '#4389ed' },
-      { label: '在册员工', value: '2,846', unit: '人', note: '较上月 +2.1%', cls: 'up', color: '#1cad9b' },
-      { label: '功能覆盖', value: '100', unit: '%', note: '按功能清单逐项实现', cls: 'up', color: '#e5a22a' }
-    ]) + `<section class="panel-card"><div class="panel-header"><h3>全部功能模块</h3><span class="panel-extra">点击卡片进入模块首页</span></div>
+      { label: '三级功能', value: '94', unit: '项', note: '按会议口径', color: '#1cad9b' },
+      { label: '本期建设', value: '12', unit: '个模块', note: '工龄/合同二期 · 健康/关怀暂缓', cls: 'warn', color: '#e5a22a' }
+    ];
+    const homeNotice = scoped
+      ? `<div class="page-notice blue" style="margin-top:16px">当前登录：<b>${esc(session.label)}</b>（账号 ${esc(session.account)}）。系统自动识别所属单位，仅展示本单位人事、薪酬、考勤等数据；集团汇总与跨单位数据不可见。</div>`
+      : `<div class="page-notice blue" style="margin-top:16px">本期建设：组织机构、员工信息、员工异动、招聘、培训、考勤、薪酬、福利、绩效、职称技能、干部、报表系统；工龄与劳动合同列入二期迭代；职业健康、员工关怀归安全部门 / 工会，本期不建设。</div>`;
+    $('#page').innerHTML = `<div class="page-heading"><div class="heading-main"><div>
+        <h1>中陆化工人力资源管理系统 · 功能演示</h1>
+        <p>${scoped ? '当前以「' + esc(session.label) + '」账号登录，页面数据已按单位隔离。' : '覆盖 16 个一级模块、50 个二级功能、94 个三级功能，严格对应《人力资源管理系统功能明细》与 2026-10-30 汇报会纪要；全部为前端交互演示，数据为虚构样例。'}</p>
+      </div></div></div>` + metrics(homeMetrics) + homeNotice
+      + `<section class="panel-card"><div class="panel-header"><h3>全部功能模块</h3><span class="panel-extra">点击卡片进入模块首页</span></div>
       <div class="unit-grid">${cards}</div></section>`;
     $$('#page [data-page]').forEach((el) => el.addEventListener('click', () => goPage(el.dataset.page)));
   }
 
   /* ---------- 初始化 ---------- */
+  window.HR_SCOPE = { unit: scopeUnit, inScope, session };
   window.HR_UI = {
     esc, svg, statusTag, softChip, toast, openDialog, openDrawer, formBody,
     getFilter: (key) => state.filters[key] || {},
     renderPage, goPage
   };
 
+  const asAccount = (new URLSearchParams(location.search).get('as') || '').toLowerCase();
+  let loggedIn = false;
+  if (asAccount && ACCOUNTS[asAccount]) {
+    const a = ACCOUNTS[asAccount];
+    session.account = asAccount;
+    session.unit = a.unit;
+    session.label = a.label;
+    session.scope = a.scope;
+    saveSession();
+    loggedIn = true;
+  } else {
+    loggedIn = loadSession();
+  }
   const initialPage = location.hash.replace('#', '');
-  if (PAGES[initialPage]) state.page = initialPage;
-  else if (initialPage === 'home') state.page = 'home';
+  if (loggedIn && PAGES[initialPage]) state.page = initialPage;
+  else if (loggedIn && initialPage === 'home') state.page = 'home';
+  else state.page = 'home';
   const initP = PAGES[state.page];
   if (initP && initP.tabs && initP.tabs.length) state.tab[state.page] = initP.tabs[0].key;
   initHeader();
+  initLogin();
   renderMenu();
   bindPageEvents();
+  applyScopeUI();
   renderPage();
+  if (!loggedIn) showLogin();
 })();

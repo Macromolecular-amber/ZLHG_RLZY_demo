@@ -312,7 +312,21 @@
             <div class="mini-stat"><b>68.4%</b><span>课程完成率</span></div>
             <div class="mini-stat"><b>8,642 h</b><span>本月学习时长</span></div>
             <div class="mini-stat"><b>3.04 h</b><span>人均学习时长</span></div>
-          </div></section></div>`;
+          </div></section></div>`
+      + H.panel('在线考试与认证', tbl([
+        { label: '考试名称', key: 'name', bold: true },
+        { label: '类别', render: (r) => H.chip(r.type, 'blue') },
+        { label: '参试人数', key: 'people', align: 'right' },
+        { label: '合格率', render: (r) => `<div class="progress-line"><div class="progress green"><span style="width:${r.rate}%"></span></div><b>${r.rate}%</b></div>` },
+        { label: '考试时间', key: 'date' },
+        { label: '认证结果', render: (r) => H.statusTag(r.status) }
+      ], [
+        { name: '三级安全教育（厂级）认证考试', type: '安全', people: 156, rate: 96, date: '2026-10-22', status: '已认证' },
+        { name: '化工总控工（中级）仿真考试', type: '技能', people: 68, rate: 88, date: '2026-10-26', status: '已认证' },
+        { name: '特种作业电工复审考试', type: '安全', people: 48, rate: 100, date: '2026-10-29', status: '进行中' },
+        { name: '新员工入职引导考试', type: '管理', people: 42, rate: 93, date: '2026-10-30', status: '已认证' },
+        { name: '危化品安全管理条例考试', type: '安全', people: 942, rate: 91, date: '2026-10-18', status: '已认证' }
+      ]), '线上考试 · 通过后自动写入培训档案');
     }
   });
 
@@ -349,6 +363,7 @@
           { label: '任期', key: 'term', width: '110px' },
           { label: '起始日期', key: 'start', width: '110px' },
           { label: '到期日期', key: 'end', width: '110px' },
+          { label: '法定退休时间', render: (r) => `<span class="num">${({ 王强: '2039-08-21', 陈立: '2034-06-30', 黄磊: '2030-12-01', 张伟: '2036-03-12', 郑霞: '2032-07-07', 李静: '2038-11-05', 周鹏: '2038-12-25', 孙慧: '2034-09-09' })[r.name] || '—'}</span>`, width: '120px' },
           { label: '任期类型', render: (r) => H.chip(r.status, r.status === '首任' ? 'blue' : 'purple'), width: '90px' },
           { label: '任期考核', render: (r) => `<span class="sub">${H.esc(r.review)}</span>`, width: '160px' }
         ],
@@ -427,6 +442,7 @@
   /* ===== 职业健康 ===== */
   window.HR_SPEC_ADD({
     key: 'safety-health', title: '职业健康',
+    notice: '本期暂不建设：职业健康管理归安全部门，劳保与安全积分由安全系统管理，后续按独立系统规划。',
     desc: '岗前、岗中、离岗职业健康体检的组织、结果归档与复查提醒；职业病诊断、鉴定、待遇与康复跟踪，建立职业健康监护档案。',
     metrics: [
       { label: '体检覆盖率', value: '98.4', unit: '%', note: '接触危害人员 100%', cls: 'up', color: '#7659e7' },
@@ -468,6 +484,7 @@
   /* ===== 劳保管理 ===== */
   window.HR_SPEC_ADD({
     key: 'safety-labor', title: '劳保管理',
+    notice: '本期暂不建设：劳保用品发放由安全系统统一管理，本页仅作规划演示。',
     desc: '劳保用品发放标准、领用记录与周期提醒；按岗位危害因素配置防护用品，未按规定佩戴纳入安全考核。',
     metrics: [
       { label: '劳保标准', value: '28', unit: '类', note: '按岗位危害因素配置', color: '#7659e7' },
@@ -496,6 +513,7 @@
   /* ===== 安全积分 ===== */
   window.HR_SPEC_ADD({
     key: 'safety-score', title: '安全积分',
+    notice: '本期暂不建设：安全积分与违章管理由安全系统统一管理，本页仅作规划演示。',
     desc: '安全违章记录、安全积分、安全绩效与奖惩联动；违章分级处理，积分与评优、晋升挂钩。',
     metrics: [
       { label: '本月违章', value: '18', unit: '起', note: '较上月 -4 起', cls: 'up', color: '#7659e7' },
@@ -524,6 +542,7 @@
   /* ===== 员工关系 ===== */
   window.HR_SPEC_ADD({
     key: 'relation-relation', title: '员工关系',
+    notice: '本期暂不建设：员工关怀归工会，党务、工会相关模块后续可能独立建设。',
     desc: '表彰、记功、处分、通报等奖惩事项的登记与归档；劳动模范、先进个人、先进集体评选；员工意见、申诉、举报的受理与处理跟踪。',
     metrics: [
       { label: '本年奖惩', value: '86', unit: '项', note: '表彰 62 · 处分 24', color: '#7659e7' },
@@ -580,6 +599,7 @@
   /* ===== 关怀服务 ===== */
   window.HR_SPEC_ADD({
     key: 'relation-care', title: '关怀服务',
+    notice: '本期暂不建设：慰问帮扶与离退休服务由工会管理，后续按独立模块规划。',
     desc: '生日、节日、婚育、住院慰问及困难职工帮扶；离退休人员信息、活动、待遇发放与关怀管理。',
     metrics: [
       { label: '本年慰问', value: '286', unit: '人次', note: '金额 42.6 万元', color: '#7659e7' },
@@ -632,7 +652,9 @@
       { label: '人工成本率', value: '12.8', unit: '%', note: '-0.6pt', color: '#e5a22a' }
     ],
     custom: () => {
-      const units = D2.REPORT_UNITS.map((u) => `<div class="bar-item"><span class="b-label">${u.unit}</span>
+      const scoped = window.HR_SCOPE ? window.HR_SCOPE.unit() : null;
+      const unitsData = scoped ? D2.REPORT_UNITS.filter((u) => String(u.unit).indexOf(scoped) >= 0) : D2.REPORT_UNITS;
+      const units = unitsData.map((u) => `<div class="bar-item"><span class="b-label">${u.unit}</span>
         <div class="bar-track"><span class="bar-fill blue" style="width:${u.pct * 3.4}%"></span></div><b>${u.people}</b></div>`).join('');
       const costRows = `<div class="bar-list">${D2.COST_STRUCT.map((c) => `<div class="bar-item"><span class="b-label">${c.name}</span>
         <div class="bar-track"><span class="bar-fill" style="width:${c.pct}%;background:linear-gradient(90deg,${c.color},${c.color}bb)"></span></div><b>${c.pct}%</b></div>`).join('')}</div>`;
@@ -651,7 +673,40 @@
           <div><div class="section-title"><span class="bar"></span>③ 展示方式</div><div class="chip-wall"><span class="chip green">柱状图</span><span class="chip green">折线图</span><span class="chip gray">看板卡</span></div></div>
         </div><div style="margin-top:14px;display:flex;gap:10px"><button class="btn primary" data-act="toast" data-id="报表已生成">生成报表</button><button class="btn" data-act="toast" data-id="模板已保存">存为模板</button></div>`, '领导驾驶舱 · 支持下钻')
       + H.panel('数据看板（领导驾驶舱）', `<div class="mini-stats">${D2.REPORT_KPIS.map((k) => `<div class="mini-stat"><b>${k.value}</b><span>${k.label}　${k.note}</span></div>`).join('')}</div>
-        <p class="panel-note">数据取自 2026 年 10 月人力报表，支持按月 / 季 / 年切换与逐级下钻至单位。</p>`, '近 12 个月');
+        <p class="panel-note">数据取自 2026 年 10 月人力报表，支持按月 / 季 / 年切换与逐级下钻至单位。</p>`, '近 12 个月')
+      + H.panel('人员基础信息台账与结构看板', `<div class="two-columns" style="grid-template-columns:1fr 1fr 1fr">
+        <div><div class="section-title"><span class="bar"></span>学历结构</div><div class="bar-list">
+          ${[['研究生及以上', 6.5, 'purple'], ['本科', 55.9, 'blue'], ['大专', 28.4, 'green'], ['中专及以下', 9.2, 'orange']].map((x) => `<div class="bar-item"><span class="b-label">${x[0]}</span><div class="bar-track"><span class="bar-fill ${x[2]}" style="width:${x[1]}%"></span></div><b>${x[1]}%</b></div>`).join('')}</div></div>
+        <div><div class="section-title"><span class="bar"></span>年龄结构</div><div class="bar-list">
+          ${[['30 岁以下', 18], ['31–40 岁', 42], ['41–50 岁', 30], ['51 岁以上', 10]].map((x) => `<div class="bar-item"><span class="b-label">${x[0]}</span><div class="bar-track"><span class="bar-fill blue" style="width:${x[1] * 1.8}%"></span></div><b>${x[1]}%</b></div>`).join('')}</div></div>
+        <div><div class="section-title"><span class="bar"></span>用工类型</div><div class="bar-list">
+          ${[['正式工', 86.7], ['劳务派遣', 9.2], ['业务承包', 2.1], ['其他（返聘 / 内退）', 2.0]].map((x) => `<div class="bar-item"><span class="b-label">${x[0]}</span><div class="bar-track"><span class="bar-fill green" style="width:${x[1]}%"></span></div><b>${x[1]}%</b></div>`).join('')}</div></div>
+      </div><p class="panel-note">人员基础信息台账覆盖在册正式工及其他用工、人员流动痕迹；支持按学历、年龄、岗位层级、用工类型多维统计并下钻至单位，提前预判干部梯队缺口。</p>`, '支持下钻 / 同比 / 环比')
+      + H.panel('全额人工成本台账（含单位 + 个人五险一金与福利性费用）', tbl([
+        { label: '单位', key: 'unit', bold: true },
+        { label: '在册人数', key: 'people', align: 'right' },
+        { label: '工资及奖金', key: 'wage', align: 'right' },
+        { label: '单位五险一金', key: 'unitIns', align: 'right' },
+        { label: '个人五险一金', key: 'personIns', align: 'right' },
+        { label: '福利性费用', key: 'welfare', align: 'right' },
+        { label: '全额成本', render: (r) => `<span class="strong">${r.total}</span>`, align: 'right' }
+      ], (scoped ? [
+        { unit: '集团本部', people: 386, wage: '2,150 万', unitIns: '500 万', personIns: '240 万', welfare: '140 万', total: '3,030 万' },
+        { unit: '三叶实业', people: 726, wage: '4,050 万', unitIns: '940 万', personIns: '450 万', welfare: '270 万', total: '5,710 万' },
+        { unit: '汇丰石化', people: 618, wage: '3,450 万', unitIns: '800 万', personIns: '385 万', welfare: '230 万', total: '4,865 万' },
+        { unit: '翔鑫工贸', people: 452, wage: '2,520 万', unitIns: '585 万', personIns: '280 万', welfare: '170 万', total: '3,555 万' },
+        { unit: '维达石化', people: 268, wage: '1,500 万', unitIns: '350 万', personIns: '170 万', welfare: '100 万', total: '2,120 万' },
+        { unit: '宏达人力', people: 246, wage: '1,370 万', unitIns: '320 万', personIns: '155 万', welfare: '90 万', total: '1,935 万' },
+        { unit: '兰达工贸', people: 150, wage: '840 万', unitIns: '195 万', personIns: '95 万', welfare: '55 万', total: '1,185 万' }
+      ].filter((r) => String(r.unit).indexOf(scoped) >= 0) : [
+        { unit: '集团本部', people: 386, wage: '2,150 万', unitIns: '500 万', personIns: '240 万', welfare: '140 万', total: '3,030 万' },
+        { unit: '三叶实业', people: 726, wage: '4,050 万', unitIns: '940 万', personIns: '450 万', welfare: '270 万', total: '5,710 万' },
+        { unit: '汇丰石化', people: 618, wage: '3,450 万', unitIns: '800 万', personIns: '385 万', welfare: '230 万', total: '4,865 万' },
+        { unit: '翔鑫工贸', people: 452, wage: '2,520 万', unitIns: '585 万', personIns: '280 万', welfare: '170 万', total: '3,555 万' },
+        { unit: '维达石化', people: 268, wage: '1,500 万', unitIns: '350 万', personIns: '170 万', welfare: '100 万', total: '2,120 万' },
+        { unit: '宏达人力', people: 246, wage: '1,370 万', unitIns: '320 万', personIns: '155 万', welfare: '90 万', total: '1,935 万' },
+        { unit: '兰达工贸', people: 150, wage: '840 万', unitIns: '195 万', personIns: '95 万', welfare: '55 万', total: '1,185 万' }
+      ])), '合计 18,404 万元 · 支持导入导出与要素勾选');
     }
   });
 
@@ -716,5 +771,22 @@
     ],
     extra: () => H.panel('系统集成', `<div class="chip-wall">${['财务系统（凭证 / 成本）', 'ERP（机构 / 岗位 / 人员）', '门禁系统（打卡数据）', '钉钉 / 飞书（消息 / 待办）', '社保网上申报平台', '电子签章平台'].map((x) => `<span class="chip blue">${x}</span>`).join('')}</div>
       <p class="panel-note">所有集成接口均记录调用日志与失败重试；操作日志保留 3 年，支持按用户 / 对象 / 时间检索。</p>`, '接口 6 类 · 审计留痕')
+      + `<div class="two-columns"><section class="panel-card"><div class="panel-header"><h3>部署与访问方案</h3><span class="panel-extra">内网优先 · 合规开放</span></div>
+        <div class="dot-list">
+          <div class="dot-item"><i></i>初期部署于中石油内网三叶公司机房，与 OA、业务系统网络互通，暂不开放公网访问。</div>
+          <div class="dot-item"><i></i>后续向兰石化提交网闸开通申请，仅开放非涉密功能外网访问，解决异地项目部、外派人员使用需求。</div>
+          <div class="dot-item"><i></i>移动端看板 / 审批待网闸审批通过后逐步落地；涉密核心数据全程不对外网开放。</div>
+          <div class="dot-item"><i></i>本期四大核心模块：人资系统、数字档案系统、综合管控平台、数据融合平台；人资系统为本期重中之重。</div>
+          <div class="dot-item"><i></i>上线初期与各单位现有手工台账、在用系统并行运行 2—3 个月，逐人核对薪酬与人员数据后再逐步替换。</div>
+          <div class="dot-item"><i></i>本次演示为临时样例环境；后续结合四大系统打造统一登录入口，支持选择子公司或按账号自动判别。</div>
+        </div></section>
+        <section class="panel-card"><div class="panel-header"><h3>总分权限架构</h3><span class="panel-extra">集团管核心 · 操作下放</span></div>
+          <div class="mini-stats" style="grid-template-columns:1fr 1fr">
+            <div class="mini-stat"><b>集团</b><span>查看全集团汇总数据、核心规则与标准</span></div>
+            <div class="mini-stat"><b>子公司</b><span>仅本单位人事、薪酬等数据</span></div>
+            <div class="mini-stat"><b>部门</b><span>本部门员工、考勤、绩效审批</span></div>
+            <div class="mini-stat"><b>员工</b><span>本人信息、考勤、工资条查询</span></div>
+          </div>
+          <p class="panel-note">避免跨主体数据泄露；集团只管核心内容与汇总数据，具体操作权限下放各单位，不采用小型 ERP 模式。</p></section></div>`
   });
 })();
